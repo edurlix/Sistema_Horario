@@ -52,7 +52,7 @@ class Asignatura(models.Model):
     codigo = models.CharField(max_length=20, unique=True)
     titulacion = models.CharField(max_length=2, choices=TITULACIONES)
     curso = models.IntegerField(choices=CURSOS)
-    profesor = models.ForeignKey(Profesor, on_delete=models.SET_NULL, null=True, blank=True)
+    profesor = models.ForeignKey(Profesor, on_delete=models.SET_NULL, null=True, blank=True, related_name='asignaturas')
     sesiones = models.ManyToManyField(Sesion, blank=True)
     
     def __str__(self):

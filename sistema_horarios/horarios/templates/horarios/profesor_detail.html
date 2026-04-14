@@ -7,7 +7,7 @@
 
 <div style="margin-left:20px;margin-top:20px">
   <h4>Asignaturas que imparte</h4>
-  {% for asignatura in profesor.asignaturas.all %}
+  {% for asignatura in profesor.asignaturas_set.all %}
   <hr>
   <p><a href="{{ asignatura.get_absolute_url }}">{{ asignatura.codigo }} - {{ asignatura.nombre }}</a></p>
   <p><strong>Titulación:</strong> {{ asignatura.get_titulacion_display }}</p>
