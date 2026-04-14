@@ -1,0 +1,19 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>Lista de Asignaturas</h1>
+
+{% if asignatura_list %}
+<ul>
+  {% for asignatura in asignatura_list %}
+  <li>
+    <a href="{{ asignatura.get_absolute_url }}">{{ asignatura.codigo }} - {{ asignatura.nombre }}</a>
+    ({{ asignatura.get_titulacion_display }} - {{ asignatura.get_curso_display }})
+    - Profesor: {{ asignatura.profesor|default:"Sin asignar" }}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No hay asignaturas en el sistema.</p>
+{% endif %}
+{% endblock %}

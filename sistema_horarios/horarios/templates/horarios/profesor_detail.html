@@ -1,0 +1,19 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>{{ profesor.nombre }} {{ profesor.apellidos }}</h1>
+
+<p><strong>Email:</strong> {{ profesor.email|default:"No registrado" }}</p>
+
+<div style="margin-left:20px;margin-top:20px">
+  <h4>Asignaturas que imparte</h4>
+  {% for asignatura in profesor.asignaturas.all %}
+  <hr>
+  <p><a href="{{ asignatura.get_absolute_url }}">{{ asignatura.codigo }} - {{ asignatura.nombre }}</a></p>
+  <p><strong>Titulación:</strong> {{ asignatura.get_titulacion_display }}</p>
+  <p><strong>Curso:</strong> {{ asignatura.get_curso_display }}</p>
+  {% empty %}
+  <p>No tiene asignaturas asignadas.</p>
+  {% endfor %}
+</div>
+{% endblock %}

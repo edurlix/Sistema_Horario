@@ -1,0 +1,23 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>{{ asignatura.nombre }}</h1>
+
+<p><strong>Código:</strong> {{ asignatura.codigo }}</p>
+<p><strong>Titulación:</strong> {{ asignatura.get_titulacion_display }}</p>
+<p><strong>Curso:</strong> {{ asignatura.get_curso_display }}</p>
+<p><strong>Profesor:</strong> 
+  <a href="{{ asignatura.profesor.get_absolute_url }}">{{ asignatura.profesor }}</a>
+</p>
+
+<div style="margin-left:20px;margin-top:20px">
+  <h4>Sesiones</h4>
+  {% for sesion in asignatura.sesiones.all %}
+  <hr>
+  <p><strong>Día:</strong> {{ sesion.get_dia_display }}</p>
+  <p><strong>Horario:</strong> {{ sesion.hora_inicio }} - {{ sesion.hora_fin }}</p>
+  {% empty %}
+  <p>No hay sesiones programadas.</p>
+  {% endfor %}
+</div>
+{% endblock %}

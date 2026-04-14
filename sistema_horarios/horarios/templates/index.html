@@ -1,0 +1,16 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>Sistema de Gestión de Horarios</h1>
+
+<p>Bienvenido a <em>SistemaHorarios</em>, una aplicación Django para gestión de horarios académicos.</p>
+
+<h2>Contenido dinámico</h2>
+<p>El sistema tiene los siguientes registros:</p>
+<ul>
+  <li><strong>Profesores:</strong> {{ num_profesores }}</li>
+  <li><strong>Asignaturas:</strong> {{ num_asignaturas }}</li>
+  <li><strong>Sesiones:</strong> {{ num_sesiones }}</li>
+</ul>
+<p>Has visitado esta página {{ num_visits }} vez{{ num_visits|pluralize:"es" }}.</p>
+{% endblock %}

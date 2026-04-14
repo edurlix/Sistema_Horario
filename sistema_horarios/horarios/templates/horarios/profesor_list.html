@@ -1,0 +1,18 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>Lista de Profesores</h1>
+
+{% if profesor_list %}
+<ul>
+  {% for profesor in profesor_list %}
+  <li>
+    <a href="{{ profesor.get_absolute_url }}">{{ profesor.apellidos }}, {{ profesor.nombre }}</a>
+    ({{ profesor.email|default:"Sin email" }})
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No hay profesores registrados.</p>
+{% endif %}
+{% endblock %}

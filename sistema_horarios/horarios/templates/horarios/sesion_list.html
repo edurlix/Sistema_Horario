@@ -1,0 +1,17 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>Lista de Sesiones</h1>
+
+{% if sesion_list %}
+<ul>
+  {% for sesion in sesion_list %}
+  <li>
+    {{ sesion.get_dia_display }}: {{ sesion.hora_inicio }} - {{ sesion.hora_fin }}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No hay sesiones registradas.</p>
+{% endif %}
+{% endblock %}
