@@ -1,0 +1,20 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>Gestionar Sesiones de {{ asignatura.codigo }} - {{ asignatura.nombre }}</h1>
+
+<p>Selecciona las sesiones que corresponden a esta asignatura:</p>
+
+<form method="post">
+    {% csrf_token %}
+    
+    <div style="margin: 20px 0;">
+        {{ form.sesiones }}
+    </div>
+    
+    <button type="submit" style="background-color: #4CAF50; color: white; padding: 8px 15px; border: none; border-radius: 3px; cursor: pointer;">
+        Guardar Sesiones
+    </button>
+    <a href="{% url 'asignatura-detail' asignatura.pk %}" style="margin-left: 10px;">Cancelar</a>
+</form>
+{% endblock %}

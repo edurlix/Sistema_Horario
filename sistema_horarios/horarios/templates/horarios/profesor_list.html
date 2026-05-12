@@ -3,12 +3,18 @@
 {% block content %}
 <h1>Lista de Profesores</h1>
 
+<div style="margin-bottom: 20px;">
+    <a href="{% url 'profesor-create' %}" style="background-color: #4CAF50; color: white; padding: 5px 10px; text-decoration: none;">+ Agregar Profesor</a>
+</div>
+
 {% if profesor_list %}
 <ul>
   {% for profesor in profesor_list %}
   <li>
     <a href="{{ profesor.get_absolute_url }}">{{ profesor.apellidos }}, {{ profesor.nombre }}</a>
     ({{ profesor.email|default:"Sin email" }})
+    <a href="{% url 'profesor-update' profesor.id %}" style="margin-left: 10px;">Editar</a>
+    <a href="{% url 'profesor-delete' profesor.id %}" style="margin-left: 5px; color: red;">Eliminar</a>
   </li>
   {% endfor %}
 </ul>

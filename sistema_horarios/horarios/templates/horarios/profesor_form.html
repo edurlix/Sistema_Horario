@@ -1,0 +1,35 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>{% if form.instance.pk %}Editar{% else %}Crear{% endif %} Profesor</h1>
+
+<form method="post">
+    {% csrf_token %}
+    <div style="margin-bottom: 10px;">
+        <label for="{{ form.nombre.id_for_label }}">Nombre:</label>
+        {{ form.nombre }}
+        {% if form.nombre.errors %}
+            <div style="color: red;">{{ form.nombre.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <div style="margin-bottom: 10px;">
+        <label for="{{ form.apellidos.id_for_label }}">Apellidos:</label>
+        {{ form.apellidos }}
+        {% if form.apellidos.errors %}
+            <div style="color: red;">{{ form.apellidos.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <div style="margin-bottom: 10px;">
+        <label for="{{ form.email.id_for_label }}">Email:</label>
+        {{ form.email }}
+        {% if form.email.errors %}
+            <div style="color: red;">{{ form.email.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <button type="submit" style="background-color: #4CAF50; color: white; padding: 5px 10px; margin-top: 10px;">Guardar</button>
+    <a href="{% url 'profesores' %}" style="margin-left: 10px;">Cancelar</a>
+</form>
+{% endblock %}

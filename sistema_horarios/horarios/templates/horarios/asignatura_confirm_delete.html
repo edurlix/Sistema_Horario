@@ -1,0 +1,13 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>Eliminar Asignatura</h1>
+
+<p>¿Estás seguro que quieres eliminar la asignatura "{{ asignatura.codigo }} - {{ asignatura.nombre }}"?</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" style="background-color: #f44336; color: white; padding: 5px 10px;">Sí, eliminar</button>
+    <a href="{% url 'asignaturas' %}" style="margin-left: 10px;">Cancelar</a>
+</form>
+{% endblock %}

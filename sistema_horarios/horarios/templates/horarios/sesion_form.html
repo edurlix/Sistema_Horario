@@ -1,0 +1,35 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>{% if form.instance.pk %}Editar{% else %}Crear{% endif %} Sesión</h1>
+
+<form method="post">
+    {% csrf_token %}
+    <div style="margin-bottom: 10px;">
+        <label for="{{ form.dia.id_for_label }}">Día:</label>
+        {{ form.dia }}
+        {% if form.dia.errors %}
+            <div style="color: red;">{{ form.dia.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <div style="margin-bottom: 10px;">
+        <label for="{{ form.hora_inicio.id_for_label }}">Hora inicio:</label>
+        {{ form.hora_inicio }}
+        {% if form.hora_inicio.errors %}
+            <div style="color: red;">{{ form.hora_inicio.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <div style="margin-bottom: 10px;">
+        <label for="{{ form.hora_fin.id_for_label }}">Hora fin:</label>
+        {{ form.hora_fin }}
+        {% if form.hora_fin.errors %}
+            <div style="color: red;">{{ form.hora_fin.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <button type="submit" style="background-color: #4CAF50; color: white; padding: 5px 10px; margin-top: 10px;">Guardar</button>
+    <a href="{% url 'sesiones' %}" style="margin-left: 10px;">Cancelar</a>
+</form>
+{% endblock %}

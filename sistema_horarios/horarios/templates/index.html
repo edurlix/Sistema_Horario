@@ -3,7 +3,124 @@
 {% block content %}
 <h1>Sistema de Gestion de Horarios</h1>
 
-<p>Bienvenido a SistemaHorarios, una aplicación Django para gestión de horarios académicos.</p>
+<p>Esta es una aplicación para gestión de horarios académicos.</p>
+
+{% if conflictos %}
+<div style="background-color: #ffebee; border: 1px solid #f44336; padding: 10px; margin: 10px 0;">
+    <h3 style="color: #f44336;">Conflictos detectados (RF-02)</h3>
+    <ul>
+        {% for conflicto in conflictos %}
+        <li>{{ conflicto }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% else %}
+<div style="background-color: #e8f5e9; border: 1px solid #4CAF50; padding: 10px; margin: 10px 0;">
+    No hay conflictos de horario entre profesores.
+</div>
+{% endif %}
+
+<h2>Horario Semanal</h2>
+{% if horario_semanal %}
+<table border="1" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+    <thead>
+        <tr>
+            <th>Horario</th>
+            <th>Lunes</th>
+            <th>Martes</th>
+            <th>Miércoles</th>
+            <th>Jueves</th>
+            <th>Viernes</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for fila in horario_semanal %}
+        <tr>
+            <td style="background-color: #f2f2f2; width: 80px;">
+                <strong>{{ fila.hora_inicio|time:"H:i" }} - {{ fila.hora_fin|time:"H:i" }}</strong>
+            </td>
+            
+            <!-- Lunes -->
+            <td style="vertical-align: top; padding: 5px;">
+                {% if fila.lunes %}
+                    <div style="background-color: #e3f2fd; padding: 8px; border-radius: 5px;">
+                        <div><strong>Código:</strong> {{ fila.lunes.codigo }}</div>
+                        <div><strong>Nombre:</strong> {{ fila.lunes.nombre }}</div>
+                        <div><strong>Curso:</strong> {{ fila.lunes.curso }}</div>
+                        <div><strong>Titulación:</strong> {{ fila.lunes.titulacion }}</div>
+                        <div><strong>Profesor:</strong> {{ fila.lunes.profesor }}</div>
+                    </div>
+                {% else %}
+                    <span style="color: #ccc;">— Libre —</span>
+                {% endif %}
+            </td>
+            
+            <!-- Martes -->
+            <td style="vertical-align: top; padding: 5px;">
+                {% if fila.martes %}
+                    <div style="background-color: #e3f2fd; padding: 8px; border-radius: 5px;">
+                        <div><strong>Código:</strong> {{ fila.martes.codigo }}</div>
+                        <div><strong>Nombre:</strong> {{ fila.martes.nombre }}</div>
+                        <div><strong>Curso:</strong> {{ fila.martes.curso }}</div>
+                        <div><strong>Titulación:</strong> {{ fila.martes.titulacion }}</div>
+                        <div><strong>Profesor:</strong> {{ fila.martes.profesor }}</div>
+                    </div>
+                {% else %}
+                    <span style="color: #ccc;">— Libre —</span>
+                {% endif %}
+            </td>
+            
+            <!-- Miércoles -->
+            <td style="vertical-align: top; padding: 5px;">
+                {% if fila.miercoles %}
+                    <div style="background-color: #e3f2fd; padding: 8px; border-radius: 5px;">
+                        <div><strong>Código:</strong> {{ fila.miercoles.codigo }}</div>
+                        <div><strong>Nombre:</strong> {{ fila.miercoles.nombre }}</div>
+                        <div><strong>Curso:</strong> {{ fila.miercoles.curso }}</div>
+                        <div><strong>Titulación:</strong> {{ fila.miercoles.titulacion }}</div>
+                        <div><strong>Profesor:</strong> {{ fila.miercoles.profesor }}</div>
+                    </div>
+                {% else %}
+                    <span style="color: #ccc;">— Libre —</span>
+                {% endif %}
+            </td>
+            
+            <!-- Jueves -->
+            <td style="vertical-align: top; padding: 5px;">
+                {% if fila.jueves %}
+                    <div style="background-color: #e3f2fd; padding: 8px; border-radius: 5px;">
+                        <div><strong>Código:</strong> {{ fila.jueves.codigo }}</div>
+                        <div><strong>Nombre:</strong> {{ fila.jueves.nombre }}</div>
+                        <div><strong>Curso:</strong> {{ fila.jueves.curso }}</div>
+                        <div><strong>Titulación:</strong> {{ fila.jueves.titulacion }}</div>
+                        <div><strong>Profesor:</strong> {{ fila.jueves.profesor }}</div>
+                    </div>
+                {% else %}
+                    <span style="color: #ccc;">— Libre —</span>
+                {% endif %}
+            </td>
+            
+            <!-- Viernes -->
+            <td style="vertical-align: top; padding: 5px;">
+                {% if fila.viernes %}
+                    <div style="background-color: #e3f2fd; padding: 8px; border-radius: 5px;">
+                        <div><strong>Código:</strong> {{ fila.viernes.codigo }}</div>
+                        <div><strong>Nombre:</strong> {{ fila.viernes.nombre }}</div>
+                        <div><strong>Curso:</strong> {{ fila.viernes.curso }}</div>
+                        <div><strong>Titulación:</strong> {{ fila.viernes.titulacion }}</div>
+                        <div><strong>Profesor:</strong> {{ fila.viernes.profesor }}</div>
+                    </div>
+                {% else %}
+                    <span style="color: #ccc;">— Libre —</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No hay sesiones configuradas.</p>
+{% endif %}
 
 <h2>Contenido dinámico</h2>
 <p>El sistema tiene los siguientes registros:</p>
@@ -12,5 +129,13 @@
   <li><strong>Asignaturas:</strong> {{ num_asignaturas }}</li>
   <li><strong>Sesiones:</strong> {{ num_sesiones }}</li>
 </ul>
-<p>Has visitado esta página {{ num_visits }} vec{{ num_visits|pluralize:"es" }}.</p>
+
+<div style="margin-top: 20px;">
+    <p><strong>Accesos rápidos:</strong></p>
+    <ul>
+        <li><a href="{% url 'asignaturas' %}">Gestionar Asignaturas</a></li>
+        <li><a href="{% url 'profesores' %}">Gestionar Profesores</a></li>
+        <li><a href="{% url 'sesiones' %}">Gestionar Sesiones</a></li>
+    </ul>
+</div>
 {% endblock %}

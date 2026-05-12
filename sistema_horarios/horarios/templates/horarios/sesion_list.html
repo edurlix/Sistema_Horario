@@ -3,11 +3,17 @@
 {% block content %}
 <h1>Lista de Sesiones</h1>
 
+<div style="margin-bottom: 20px;">
+    <a href="{% url 'sesion-create' %}" style="background-color: #4CAF50; color: white; padding: 5px 10px; text-decoration: none;">+ Agregar Sesión</a>
+</div>
+
 {% if sesion_list %}
 <ul>
   {% for sesion in sesion_list %}
   <li>
     {{ sesion.get_dia_display }}: {{ sesion.hora_inicio }} - {{ sesion.hora_fin }}
+    <a href="{% url 'sesion-update' sesion.id %}" style="margin-left: 10px;">Editar</a>
+    <a href="{% url 'sesion-delete' sesion.id %}" style="margin-left: 5px; color: red;">Eliminar</a>
   </li>
   {% endfor %}
 </ul>

@@ -3,6 +3,10 @@
 {% block content %}
 <h1>Lista de Asignaturas</h1>
 
+<div style="margin-bottom: 20px;">
+    <a href="{% url 'asignatura-create' %}" style="background-color: #4CAF50; color: white; padding: 5px 10px; text-decoration: none;">+ Agregar Asignatura</a>
+</div>
+
 {% if asignatura_list %}
 <ul>
   {% for asignatura in asignatura_list %}
@@ -10,6 +14,8 @@
     <a href="{{ asignatura.get_absolute_url }}">{{ asignatura.codigo }} - {{ asignatura.nombre }}</a>
     ({{ asignatura.get_titulacion_display }} - {{ asignatura.get_curso_display }})
     - Profesor: {{ asignatura.profesor|default:"Sin asignar" }}
+    <a href="{% url 'asignatura-update' asignatura.id %}" style="margin-left: 10px;">Editar</a>
+    <a href="{% url 'asignatura-delete' asignatura.id %}" style="margin-left: 5px; color: red;">Eliminar</a>
   </li>
   {% endfor %}
 </ul>

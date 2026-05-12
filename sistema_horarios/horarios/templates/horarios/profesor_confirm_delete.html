@@ -1,0 +1,13 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>Eliminar Profesor</h1>
+
+<p>¿Estás seguro que quieres eliminar al profesor "{{ profesor.nombre }} {{ profesor.apellidos }}"?</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" style="background-color: #f44336; color: white; padding: 5px 10px;">Sí, eliminar</button>
+    <a href="{% url 'profesores' %}" style="margin-left: 10px;">Cancelar</a>
+</form>
+{% endblock %}

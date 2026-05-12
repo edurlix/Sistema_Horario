@@ -1,5 +1,6 @@
 from django.db import models
 from django.urls import reverse
+from django.core.exceptions import ValidationError
 
 class Profesor(models.Model):
     nombre = models.CharField(max_length=100)
@@ -60,3 +61,21 @@ class Asignatura(models.Model):
     
     def get_absolute_url(self):
         return reverse('asignatura-detail', args=[str(self.id)])
+    
+    
+    def clean(self):
+        if self.profesor:
+            
+            conflictos = Asignatura.objects.filter(
+                profesor=self.profesor,
+                sesiones__in=self.sesiones.all()
+            ).exclude(pk=self.pk)
+            
+            if conflictos.exists():
+                raise ValidationError(
+                    f"El profesor {self.profesor} ya tiene otra asignatura en el mismo horario."
+                )
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()  # Ejecuta validación antes de guardar
+        super().save(*args, **kwargs)
