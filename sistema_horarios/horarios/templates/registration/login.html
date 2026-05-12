@@ -1,33 +1,68 @@
-{% extends "base_generic.html" %}
-
-{% block content %}
-
-{% if form.errors %}
-<p style="color: red;">Su nombre de usuario y contraseña no coinciden. Inténtelo de nuevo.</p>
-{% endif %}
-
-{% if next %}
-    {% if user.is_authenticated %}
-    <p>Su cuenta no tiene acceso a esta página. Para continuar, inicie sesión con una cuenta que tenga acceso.</p>
-    {% else %}
-    <p>Por favor inicie sesión para ver esta página.</p>
-    {% endif %}
-{% endif %}
-
-<form method="post" action="{% url 'login' %}">
-    {% csrf_token %}
-    <div style="margin-bottom: 10px;">
-        <label for="{{ form.username.id_for_label }}">Usuario:</label>
-        {{ form.username }}
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iniciar Sesion · Sistema de Horarios</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>Sistema de Horarios</h1>
+      <p>UCJC · Gestion Academica</p>
     </div>
-    <div style="margin-bottom: 10px;">
-        <label for="{{ form.password.id_for_label }}">Contraseña:</label>
-        {{ form.password }}
+    <div class="login-body">
+
+      {% if form.errors %}
+      <div class="alert alert-danger" style="margin-bottom: 16px;">
+        Usuario o contrasena incorrectos. Intentelo de nuevo.
+      </div>
+      {% endif %}
+
+      {% if next %}
+        {% if user.is_authenticated %}
+        <div class="alert alert-warning" style="margin-bottom: 16px;">
+          Su cuenta no tiene acceso a esta pagina.
+        </div>
+        {% else %}
+        <div class="alert alert-info" style="margin-bottom: 16px;">
+          Por favor inicie sesion para continuar.
+        </div>
+        {% endif %}
+      {% endif %}
+
+      <form method="post" action="{% url 'login' %}" novalidate>
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="{{ form.username.id_for_label }}">Usuario</label>
+          <input type="text"
+                 name="{{ form.username.html_name }}"
+                 id="{{ form.username.id_for_label }}"
+                 class="form-control"
+                 autocomplete="username"
+                 autofocus
+                 placeholder="Nombre de usuario">
+        </div>
+        <div class="form-group">
+          <label for="{{ form.password.id_for_label }}">Contrasena</label>
+          <input type="password"
+                 name="{{ form.password.html_name }}"
+                 id="{{ form.password.id_for_label }}"
+                 class="form-control"
+                 autocomplete="current-password"
+                 placeholder="Contrasena">
+        </div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px;">
+          Iniciar sesion
+        </button>
+      </form>
+
     </div>
-    <input type="submit" value="Iniciar sesión" style="background-color: #4CAF50; color: white; padding: 5px 10px;">
-    <input type="hidden" name="next" value="{{ next }}">
-</form>
-
-<p><a href="{% url 'password_reset' %}">¿Olvidó su contraseña?</a></p>
-
-{% endblock %}
+  </div>
+</div>
+</body>
+</html>

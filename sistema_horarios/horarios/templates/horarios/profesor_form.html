@@ -1,35 +1,38 @@
 {% extends "base_generic.html" %}
 
-{% block content %}
-<h1>{% if form.instance.pk %}Editar{% else %}Crear{% endif %} Profesor</h1>
+{% block title %}<title>{% if object %}Editar{% else %}Nuevo{% endif %} Profesor · Sistema de Horarios</title>{% endblock %}
+{% block page_title %}{% if object %}Editar Profesor{% else %}Nuevo Profesor{% endif %}{% endblock %}
 
-<form method="post">
-    {% csrf_token %}
-    <div style="margin-bottom: 10px;">
-        <label for="{{ form.nombre.id_for_label }}">Nombre:</label>
-        {{ form.nombre }}
-        {% if form.nombre.errors %}
-            <div style="color: red;">{{ form.nombre.errors }}</div>
+{% block content %}
+
+<div class="form-card">
+  <div class="card-header">
+    {% if object %}Editar: {{ object }}{% else %}Nuevo Profesor{% endif %}
+  </div>
+  <div class="form-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">
+          {{ field.label }}{% if field.field.required %}<span class="required"> *</span>{% endif %}
+        </label>
+        {{ field }}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
         {% endif %}
-    </div>
-    
-    <div style="margin-bottom: 10px;">
-        <label for="{{ form.apellidos.id_for_label }}">Apellidos:</label>
-        {{ form.apellidos }}
-        {% if form.apellidos.errors %}
-            <div style="color: red;">{{ form.apellidos.errors }}</div>
-        {% endif %}
-    </div>
-    
-    <div style="margin-bottom: 10px;">
-        <label for="{{ form.email.id_for_label }}">Email:</label>
-        {{ form.email }}
-        {% if form.email.errors %}
-            <div style="color: red;">{{ form.email.errors }}</div>
-        {% endif %}
-    </div>
-    
-    <button type="submit" style="background-color: #4CAF50; color: white; padding: 5px 10px; margin-top: 10px;">Guardar</button>
-    <a href="{% url 'profesores' %}" style="margin-left: 10px;">Cancelar</a>
-</form>
+      </div>
+      {% endfor %}
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          {% if object %}Guardar cambios{% else %}Crear Profesor{% endif %}
+        </button>
+        <a href="{% url 'profesores' %}" class="btn btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
 {% endblock %}

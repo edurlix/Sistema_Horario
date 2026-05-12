@@ -1,13 +1,19 @@
 {% extends "base_generic.html" %}
 
+{% block title %}<title>Eliminar Sesion · Sistema de Horarios</title>{% endblock %}
+{% block page_title %}Eliminar Sesion{% endblock %}
+
 {% block content %}
-<h1>Eliminar Sesión</h1>
-
-<p>¿Estás seguro que quieres eliminar la sesión "{{ sesion }}"?</p>
-
-<form method="post">
-    {% csrf_token %}
-    <button type="submit" style="background-color: #f44336; color: white; padding: 5px 10px;">Sí, eliminar</button>
-    <a href="{% url 'sesiones' %}" style="margin-left: 10px;">Cancelar</a>
-</form>
+<div class="confirm-box">
+  <h2>Confirmar eliminacion</h2>
+  <p>Las asignaturas que usen esta sesion perderan esta franja horaria.</p>
+  <div class="subject-name">{{ sesion.get_dia_display }}: {{ sesion.hora_inicio|time:"H:i" }} – {{ sesion.hora_fin|time:"H:i" }}</div>
+  <div style="display: flex; gap: 10px;">
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">Eliminar</button>
+    </form>
+    <a href="{% url 'sesiones' %}" class="btn btn-secondary">Cancelar</a>
+  </div>
+</div>
 {% endblock %}

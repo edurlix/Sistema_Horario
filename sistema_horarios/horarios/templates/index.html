@@ -1,141 +1,150 @@
 {% extends "base_generic.html" %}
 
+{% block title %}<title>Inicio · Sistema de Horarios</title>{% endblock %}
+{% block page_title %}Inicio — Horarios Semanales{% endblock %}
+
 {% block content %}
-<h1>Sistema de Gestion de Horarios</h1>
 
-<p>Esta es una aplicación para gestión de horarios académicos.</p>
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-number">{{ num_profesores }}</div>
+    <div class="stat-label">Profesores</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">{{ num_asignaturas }}</div>
+    <div class="stat-label">Asignaturas</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">{{ num_sesiones }}</div>
+    <div class="stat-label">Sesiones</div>
+  </div>
+</div>
 
+<!-- Conflict banner -->
 {% if conflictos %}
-<div style="background-color: #ffebee; border: 1px solid #f44336; padding: 10px; margin: 10px 0;">
-    <h3 style="color: #f44336;">Conflictos detectados (RF-02)</h3>
-    <ul>
-        {% for conflicto in conflictos %}
-        <li>{{ conflicto }}</li>
-        {% endfor %}
+<div class="alert alert-danger" style="margin-bottom: 24px;">
+  <div>
+    <strong>Se han detectado {{ conflictos|length }} conflicto(s) de horario:</strong>
+    <ul style="margin: 8px 0 0 18px; padding: 0;">
+      {% for c in conflictos %}<li>{{ c }}</li>{% endfor %}
     </ul>
+  </div>
 </div>
 {% else %}
-<div style="background-color: #e8f5e9; border: 1px solid #4CAF50; padding: 10px; margin: 10px 0;">
-    No hay conflictos de horario entre profesores.
+<div class="alert alert-success" style="margin-bottom: 24px;">
+  No se han detectado conflictos de horario.
 </div>
 {% endif %}
 
-<h2>Horario Semanal</h2>
-{% if horario_semanal %}
-<table border="1" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%;">
-    <thead>
-        <tr>
-            <th>Horario</th>
-            <th>Lunes</th>
-            <th>Martes</th>
-            <th>Miércoles</th>
-            <th>Jueves</th>
-            <th>Viernes</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for fila in horario_semanal %}
-        <tr>
-            <td style="background-color: #f2f2f2; width: 80px;">
-                <strong>{{ fila.hora_inicio|time:"H:i" }} - {{ fila.hora_fin|time:"H:i" }}</strong>
-            </td>
-            
-            <!-- Lunes -->
-            <td style="vertical-align: top; padding: 5px;">
-                {% if fila.lunes %}
-                    <div style="background-color: #e3f2fd; padding: 8px; border-radius: 5px;">
-                        <div><strong>Código:</strong> {{ fila.lunes.codigo }}</div>
-                        <div><strong>Nombre:</strong> {{ fila.lunes.nombre }}</div>
-                        <div><strong>Curso:</strong> {{ fila.lunes.curso }}</div>
-                        <div><strong>Titulación:</strong> {{ fila.lunes.titulacion }}</div>
-                        <div><strong>Profesor:</strong> {{ fila.lunes.profesor }}</div>
-                    </div>
-                {% else %}
-                    <span style="color: #ccc;">— Libre —</span>
-                {% endif %}
-            </td>
-            
-            <!-- Martes -->
-            <td style="vertical-align: top; padding: 5px;">
-                {% if fila.martes %}
-                    <div style="background-color: #e3f2fd; padding: 8px; border-radius: 5px;">
-                        <div><strong>Código:</strong> {{ fila.martes.codigo }}</div>
-                        <div><strong>Nombre:</strong> {{ fila.martes.nombre }}</div>
-                        <div><strong>Curso:</strong> {{ fila.martes.curso }}</div>
-                        <div><strong>Titulación:</strong> {{ fila.martes.titulacion }}</div>
-                        <div><strong>Profesor:</strong> {{ fila.martes.profesor }}</div>
-                    </div>
-                {% else %}
-                    <span style="color: #ccc;">— Libre —</span>
-                {% endif %}
-            </td>
-            
-            <!-- Miércoles -->
-            <td style="vertical-align: top; padding: 5px;">
-                {% if fila.miercoles %}
-                    <div style="background-color: #e3f2fd; padding: 8px; border-radius: 5px;">
-                        <div><strong>Código:</strong> {{ fila.miercoles.codigo }}</div>
-                        <div><strong>Nombre:</strong> {{ fila.miercoles.nombre }}</div>
-                        <div><strong>Curso:</strong> {{ fila.miercoles.curso }}</div>
-                        <div><strong>Titulación:</strong> {{ fila.miercoles.titulacion }}</div>
-                        <div><strong>Profesor:</strong> {{ fila.miercoles.profesor }}</div>
-                    </div>
-                {% else %}
-                    <span style="color: #ccc;">— Libre —</span>
-                {% endif %}
-            </td>
-            
-            <!-- Jueves -->
-            <td style="vertical-align: top; padding: 5px;">
-                {% if fila.jueves %}
-                    <div style="background-color: #e3f2fd; padding: 8px; border-radius: 5px;">
-                        <div><strong>Código:</strong> {{ fila.jueves.codigo }}</div>
-                        <div><strong>Nombre:</strong> {{ fila.jueves.nombre }}</div>
-                        <div><strong>Curso:</strong> {{ fila.jueves.curso }}</div>
-                        <div><strong>Titulación:</strong> {{ fila.jueves.titulacion }}</div>
-                        <div><strong>Profesor:</strong> {{ fila.jueves.profesor }}</div>
-                    </div>
-                {% else %}
-                    <span style="color: #ccc;">— Libre —</span>
-                {% endif %}
-            </td>
-            
-            <!-- Viernes -->
-            <td style="vertical-align: top; padding: 5px;">
-                {% if fila.viernes %}
-                    <div style="background-color: #e3f2fd; padding: 8px; border-radius: 5px;">
-                        <div><strong>Código:</strong> {{ fila.viernes.codigo }}</div>
-                        <div><strong>Nombre:</strong> {{ fila.viernes.nombre }}</div>
-                        <div><strong>Curso:</strong> {{ fila.viernes.curso }}</div>
-                        <div><strong>Titulación:</strong> {{ fila.viernes.titulacion }}</div>
-                        <div><strong>Profesor:</strong> {{ fila.viernes.profesor }}</div>
-                    </div>
-                {% else %}
-                    <span style="color: #ccc;">— Libre —</span>
-                {% endif %}
-            </td>
-        </tr>
+<!-- Timetables per degree + year -->
+{% if horarios_titulaciones %}
+
+  {% for tit in horarios_titulaciones %}
+  <div class="titulacion-block">
+
+    <div class="titulacion-heading">
+      <span class="tit-badge {{ tit.codigo }}">{{ tit.codigo }}</span>
+      <h3>{{ tit.nombre }}</h3>
+    </div>
+
+    <div class="card">
+      <div class="tab-bar" id="tabbar-{{ tit.codigo }}">
+        {% for curso in tit.cursos %}
+        <button
+          class="tab-btn {% if forloop.first %}active{% endif %}"
+          onclick="switchTab('{{ tit.codigo }}', {{ curso.numero }}, this)">
+          {{ curso.nombre }}
+        </button>
         {% endfor %}
-    </tbody>
-</table>
+      </div>
+
+      <div class="tab-panels">
+        {% for curso in tit.cursos %}
+        <div class="tab-panel {% if forloop.first %}active{% endif %}"
+             id="panel-{{ tit.codigo }}-{{ curso.numero }}">
+
+          {% if curso.horario %}
+          <div class="table-wrapper" style="border-radius: 0 0 6px 6px;">
+            <table class="schedule-table">
+              <thead>
+                <tr>
+                  <th>Hora</th>
+                  <th>Lunes</th>
+                  <th>Martes</th>
+                  <th>Miércoles</th>
+                  <th>Jueves</th>
+                  <th>Viernes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for fila in curso.horario %}
+                <tr>
+                  <td class="time-col">
+                    {{ fila.hora_inicio|time:"H:i" }}
+                    <span class="time-end">{{ fila.hora_fin|time:"H:i" }}</span>
+                  </td>
+                  {% for dia_slot in fila.dias %}
+                  <td>
+                    {% if dia_slot.asignaturas %}
+                      {% for asig in dia_slot.asignaturas %}
+                      <div class="schedule-cell {% if asig.es_electiva %}electiva{% endif %}">
+                        <div class="cell-code">{{ asig.codigo }}</div>
+                        <div class="cell-name">{{ asig.nombre }}</div>
+                        <div class="cell-prof">{{ asig.profesor }}</div>
+                        {% if asig.es_electiva %}
+                        <div class="cell-tag">Electiva</div>
+                        {% endif %}
+                      </div>
+                      {% endfor %}
+                    {% else %}
+                      <div class="empty-slot">—</div>
+                    {% endif %}
+                  </td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="empty-state" style="padding: 24px;">
+            <p>No hay sesiones programadas para este curso.</p>
+          </div>
+          {% endif %}
+
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+  {% endfor %}
+
 {% else %}
-<p>No hay sesiones configuradas.</p>
+<div class="card">
+  <div class="card-body">
+    <div class="empty-state">
+      <div style="font-size: 2rem; margin-bottom: 12px; color: #ccc;">&#9776;</div>
+      <h3 style="color: #999;">Sin horarios configurados</h3>
+      <p>Crea asignaturas y asígnalas a sesiones para ver los horarios aquí.</p>
+      <div style="margin-top: 16px; display: flex; gap: 10px; justify-content: center;">
+        <a href="{% url 'asignatura-create' %}" class="btn btn-primary btn-sm">+ Asignatura</a>
+        <a href="{% url 'sesion-create' %}" class="btn btn-secondary btn-sm">+ Sesión</a>
+      </div>
+    </div>
+  </div>
+</div>
 {% endif %}
 
-<h2>Contenido dinámico</h2>
-<p>El sistema tiene los siguientes registros:</p>
-<ul>
-  <li><strong>Profesores:</strong> {{ num_profesores }}</li>
-  <li><strong>Asignaturas:</strong> {{ num_asignaturas }}</li>
-  <li><strong>Sesiones:</strong> {{ num_sesiones }}</li>
-</ul>
+<script>
+function switchTab(titCodigo, cursoNum, btn) {
+  var card = btn.closest('.card');
+  card.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  card.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+  btn.classList.add('active');
+  document.getElementById('panel-' + titCodigo + '-' + cursoNum).classList.add('active');
+}
+</script>
 
-<div style="margin-top: 20px;">
-    <p><strong>Accesos rápidos:</strong></p>
-    <ul>
-        <li><a href="{% url 'asignaturas' %}">Gestionar Asignaturas</a></li>
-        <li><a href="{% url 'profesores' %}">Gestionar Profesores</a></li>
-        <li><a href="{% url 'sesiones' %}">Gestionar Sesiones</a></li>
-    </ul>
-</div>
 {% endblock %}

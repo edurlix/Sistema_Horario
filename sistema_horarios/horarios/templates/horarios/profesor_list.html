@@ -1,24 +1,52 @@
 {% extends "base_generic.html" %}
 
-{% block content %}
-<h1>Lista de Profesores</h1>
+{% block title %}<title>Profesores · Sistema de Horarios</title>{% endblock %}
+{% block page_title %}Profesores{% endblock %}
 
-<div style="margin-bottom: 20px;">
-    <a href="{% url 'profesor-create' %}" style="background-color: #4CAF50; color: white; padding: 5px 10px; text-decoration: none;">+ Agregar Profesor</a>
+{% block content %}
+
+<div class="page-header">
+  <h2>Listado de Profesores</h2>
+  {% if user.is_authenticated %}
+  <a href="{% url 'profesor-create' %}" class="btn btn-primary">+ Nuevo Profesor</a>
+  {% endif %}
 </div>
 
 {% if profesor_list %}
-<ul>
-  {% for profesor in profesor_list %}
-  <li>
-    <a href="{{ profesor.get_absolute_url }}">{{ profesor.apellidos }}, {{ profesor.nombre }}</a>
-    ({{ profesor.email|default:"Sin email" }})
-    <a href="{% url 'profesor-update' profesor.id %}" style="margin-left: 10px;">Editar</a>
-    <a href="{% url 'profesor-delete' profesor.id %}" style="margin-left: 5px; color: red;">Eliminar</a>
-  </li>
-  {% endfor %}
-</ul>
+<div class="card">
+  <ul class="item-list">
+    {% for profesor in profesor_list %}
+    <li>
+      <div class="item-main">
+        <div class="item-title">
+          <a href="{{ profesor.get_absolute_url }}" style="color: var(--charcoal); text-decoration: none;">
+            {{ profesor.apellidos }}, {{ profesor.nombre }}
+          </a>
+        </div>
+        <div class="item-subtitle">{{ profesor.email|default:"Sin correo registrado" }}</div>
+      </div>
+      <div class="item-actions">
+        <a href="{{ profesor.get_absolute_url }}" class="btn btn-secondary btn-xs">Ver</a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'profesor-update' profesor.id %}" class="btn btn-outline btn-xs">Editar</a>
+        <a href="{% url 'profesor-delete' profesor.id %}" class="btn btn-danger btn-xs">Eliminar</a>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
 {% else %}
-<p>No hay profesores registrados.</p>
+<div class="card">
+  <div class="card-body">
+    <div class="empty-state">
+      <h3 style="color: #999;">No hay profesores registrados</h3>
+      {% if user.is_authenticated %}
+      <a href="{% url 'profesor-create' %}" class="btn btn-primary" style="margin-top: 14px;">+ Nuevo Profesor</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
 {% endif %}
+
 {% endblock %}

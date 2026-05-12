@@ -1,25 +1,86 @@
 {% extends "base_generic.html" %}
 
-{% block content %}
-<h1>Lista de Asignaturas</h1>
+{% block title %}<title>Asignaturas · Sistema de Horarios</title>{% endblock %}
+{% block page_title %}Asignaturas{% endblock %}
 
-<div style="margin-bottom: 20px;">
-    <a href="{% url 'asignatura-create' %}" style="background-color: #4CAF50; color: white; padding: 5px 10px; text-decoration: none;">+ Agregar Asignatura</a>
+{% block content %}
+
+<div class="page-header">
+  <h2>Listado de Asignaturas</h2>
+  {% if user.is_authenticated %}
+  <a href="{% url 'asignatura-create' %}" class="btn btn-primary">+ Nueva Asignatura</a>
+  {% endif %}
 </div>
 
 {% if asignatura_list %}
-<ul>
-  {% for asignatura in asignatura_list %}
-  <li>
-    <a href="{{ asignatura.get_absolute_url }}">{{ asignatura.codigo }} - {{ asignatura.nombre }}</a>
-    ({{ asignatura.get_titulacion_display }} - {{ asignatura.get_curso_display }})
-    - Profesor: {{ asignatura.profesor|default:"Sin asignar" }}
-    <a href="{% url 'asignatura-update' asignatura.id %}" style="margin-left: 10px;">Editar</a>
-    <a href="{% url 'asignatura-delete' asignatura.id %}" style="margin-left: 5px; color: red;">Eliminar</a>
-  </li>
-  {% endfor %}
-</ul>
+<div class="card">
+  <div class="table-wrapper" style="border-radius: 7px;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Titulación</th>
+          <th>Curso</th>
+          <th>Tipo</th>
+          <th>Profesor</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for asignatura in asignatura_list %}
+        <tr>
+          <td>
+            <a href="{{ asignatura.get_absolute_url }}" style="font-weight: 700; color: var(--crimson);">
+              {{ asignatura.codigo }}
+            </a>
+          </td>
+          <td>{{ asignatura.nombre }}</td>
+          <td>
+            <span class="badge
+              {% if asignatura.titulacion.codigo == 'II' %}badge-blue
+              {% elif asignatura.titulacion.codigo == 'IR' %}badge-green
+              {% elif asignatura.titulacion.codigo == 'IT' %}badge-orange
+              {% elif asignatura.titulacion.codigo == 'DG' %}badge-purple
+              {% else %}badge-gray{% endif %}">
+              {{ asignatura.titulacion.nombre }}
+            </span>
+          </td>
+          <td><span class="badge badge-gray">{{ asignatura.get_curso_display }}</span></td>
+          <td>
+            {% if asignatura.es_electiva %}
+            <span class="badge badge-orange">Electiva</span>
+            {% else %}
+            <span class="badge badge-gray">Obligatoria</span>
+            {% endif %}
+          </td>
+          <td>{{ asignatura.profesor|default:"—" }}</td>
+          <td>
+            <div style="display: flex; gap: 6px;">
+              <a href="{{ asignatura.get_absolute_url }}" class="btn btn-secondary btn-xs">Ver</a>
+              {% if user.is_authenticated %}
+              <a href="{% url 'asignatura-update' asignatura.id %}" class="btn btn-outline btn-xs">Editar</a>
+              <a href="{% url 'asignatura-delete' asignatura.id %}" class="btn btn-danger btn-xs">Eliminar</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% else %}
-<p>No hay asignaturas en el sistema.</p>
+<div class="card">
+  <div class="card-body">
+    <div class="empty-state">
+      <h3 style="color: #999;">No hay asignaturas registradas</h3>
+      {% if user.is_authenticated %}
+      <a href="{% url 'asignatura-create' %}" class="btn btn-primary" style="margin-top: 14px;">+ Nueva Asignatura</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
 {% endif %}
+
 {% endblock %}

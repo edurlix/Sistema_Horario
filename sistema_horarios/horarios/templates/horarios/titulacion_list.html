@@ -1,0 +1,61 @@
+{% extends "base_generic.html" %}
+
+{% block title %}<title>Titulaciones · Sistema de Horarios</title>{% endblock %}
+{% block page_title %}Titulaciones{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h2>Listado de Titulaciones</h2>
+  {% if user.is_authenticated %}
+  <a href="{% url 'titulacion-create' %}" class="btn btn-primary">+ Nueva Titulacion</a>
+  {% endif %}
+</div>
+
+{% if titulacion_list %}
+<div class="card">
+  <ul class="item-list">
+    {% for titulacion in titulacion_list %}
+    <li>
+      <div class="item-main">
+        <div class="item-title">{{ titulacion.nombre }}</div>
+        <div class="item-subtitle">
+          Codigo: <strong>{{ titulacion.codigo }}</strong>
+          &nbsp;·&nbsp;
+          {{ titulacion.asignaturas.count }} asignatura(s)
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="badge
+          {% if titulacion.codigo == 'II' %}badge-blue
+          {% elif titulacion.codigo == 'IR' %}badge-green
+          {% elif titulacion.codigo == 'IT' %}badge-orange
+          {% elif titulacion.codigo == 'DG' %}badge-purple
+          {% else %}badge-gray{% endif %}">
+          {{ titulacion.codigo }}
+        </span>
+        {% if user.is_authenticated %}
+        <div class="item-actions">
+          <a href="{% url 'titulacion-update' titulacion.id %}" class="btn btn-outline btn-xs">Editar</a>
+          <a href="{% url 'titulacion-delete' titulacion.id %}" class="btn btn-danger btn-xs">Eliminar</a>
+        </div>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body">
+    <div class="empty-state">
+      <h3 style="color: #999;">No hay titulaciones registradas</h3>
+      {% if user.is_authenticated %}
+      <a href="{% url 'titulacion-create' %}" class="btn btn-primary" style="margin-top: 14px;">+ Nueva Titulacion</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

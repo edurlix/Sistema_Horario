@@ -1,6 +1,28 @@
-{% extends "base_generic.html" %}
-
-{% block content %}
-<p>¡Sesión cerrada correctamente!</p>
-<a href="{% url 'login' %}">Haga clic aquí para iniciar sesión nuevamente.</a>
-{% endblock %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sesión cerrada · Sistema de Horarios</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>Sesión cerrada</h1>
+      <p>Ha cerrado sesión correctamente.</p>
+    </div>
+    <div class="login-body" style="text-align: center;">
+      <p style="color: #555; margin-bottom: 20px; font-size: 0.9rem;">
+        ¿Desea volver a iniciar sesión?
+      </p>
+      <a href="{% url 'login' %}" class="btn btn-primary" style="justify-content: center;">
+        Iniciar sesión
+      </a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

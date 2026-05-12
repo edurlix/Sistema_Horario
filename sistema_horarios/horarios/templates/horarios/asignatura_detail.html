@@ -1,34 +1,87 @@
 {% extends "base_generic.html" %}
 
+{% block title %}<title>{{ asignatura.codigo }} · Sistema de Horarios</title>{% endblock %}
+{% block page_title %}Detalle de Asignatura{% endblock %}
+
 {% block content %}
-<h1>{{ asignatura.nombre }}</h1>
 
-<p><strong>Código:</strong> {{ asignatura.codigo }}</p>
-<p><strong>Titulación:</strong> {{ asignatura.get_titulacion_display }}</p>
-<p><strong>Curso:</strong> {{ asignatura.get_curso_display }}</p>
-<p><strong>Profesor:</strong> 
-  <a href="{{ asignatura.profesor.get_absolute_url }}">{{ asignatura.profesor }}</a>
-</p>
-
-<div style="margin: 20px 0;">
-    <a href="{% url 'asignatura-sesiones' asignatura.pk %}" 
-       style="background-color: #2196F3; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px;">
-        Gestionar Sesiones
-    </a>
+<div class="page-header">
+  <h2>{{ asignatura.nombre }}</h2>
+  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+    {% if user.is_authenticated %}
+    <a href="{% url 'asignatura-sesiones' asignatura.pk %}" class="btn btn-primary btn-sm">Gestionar Sesiones</a>
+    <a href="{% url 'asignatura-update' asignatura.pk %}" class="btn btn-outline btn-sm">Editar</a>
+    <a href="{% url 'asignatura-delete' asignatura.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
+    {% endif %}
+    <a href="{% url 'asignaturas' %}" class="btn btn-secondary btn-sm">Volver</a>
+  </div>
 </div>
 
-<div style="margin-left:20px;margin-top:20px">
-  <h4>Sesiones asignadas actualmente</h4>
-  {% for sesion in asignatura.sesiones.all %}
-  <hr>
-  <p><strong>Día:</strong> {{ sesion.get_dia_display }}</p>
-  <p><strong>Horario:</strong> {{ sesion.hora_inicio }} - {{ sesion.hora_fin }}</p>
-  {% empty %}
-  <p style="color: #999;">No hay sesiones programadas para esta asignatura.</p>
-  {% endfor %}
+<div class="detail-grid">
+  <div class="detail-field">
+    <div class="field-label">Código</div>
+    <div class="field-value">{{ asignatura.codigo }}</div>
+  </div>
+  <div class="detail-field">
+    <div class="field-label">Nombre</div>
+    <div class="field-value">{{ asignatura.nombre }}</div>
+  </div>
+  <div class="detail-field">
+    <div class="field-label">Titulación</div>
+    <div class="field-value">{{ asignatura.titulacion.nombre }}</div>
+  </div>
+  <div class="detail-field">
+    <div class="field-label">Curso</div>
+    <div class="field-value">{{ asignatura.get_curso_display }}</div>
+  </div>
+  <div class="detail-field">
+    <div class="field-label">Tipo</div>
+    <div class="field-value">
+      {% if asignatura.es_electiva %}
+        <span class="badge badge-orange">Electiva</span>
+      {% else %}
+        <span class="badge badge-gray">Obligatoria</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="detail-field">
+    <div class="field-label">Profesor</div>
+    <div class="field-value">
+      {% if asignatura.profesor %}
+        <a href="{{ asignatura.profesor.get_absolute_url }}">{{ asignatura.profesor }}</a>
+      {% else %}
+        <span style="color: #999;">Sin asignar</span>
+      {% endif %}
+    </div>
+  </div>
 </div>
 
-<div style="margin-top: 20px;">
-    <a href="{% url 'asignaturas' %}">← Volver al listado</a>
+<div class="card">
+  <div class="card-header">Sesiones programadas</div>
+  {% if asignatura.sesiones.all %}
+  <ul class="item-list">
+    {% for sesion in asignatura.sesiones.all %}
+    <li>
+      <div class="item-main">
+        <div class="item-title">{{ sesion.get_dia_display }}</div>
+        <div class="item-subtitle">{{ sesion.hora_inicio|time:"H:i" }} – {{ sesion.hora_fin|time:"H:i" }}</div>
+      </div>
+      <span class="badge badge-crimson">{{ sesion.get_dia_display|slice:":3" }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="card-body">
+    <div class="empty-state" style="padding: 20px;">
+      <p style="color: #aaa;">No hay sesiones asignadas a esta asignatura.</p>
+      {% if user.is_authenticated %}
+      <a href="{% url 'asignatura-sesiones' asignatura.pk %}" class="btn btn-primary btn-sm" style="margin-top: 10px;">
+        Asignar Sesiones
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 </div>
+
 {% endblock %}

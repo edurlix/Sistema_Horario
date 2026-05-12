@@ -1,23 +1,47 @@
 {% extends "base_generic.html" %}
 
-{% block content %}
-<h1>Lista de Sesiones</h1>
+{% block title %}<title>Sesiones · Sistema de Horarios</title>{% endblock %}
+{% block page_title %}Sesiones{% endblock %}
 
-<div style="margin-bottom: 20px;">
-    <a href="{% url 'sesion-create' %}" style="background-color: #4CAF50; color: white; padding: 5px 10px; text-decoration: none;">+ Agregar Sesión</a>
+{% block content %}
+
+<div class="page-header">
+  <h2>Listado de Sesiones</h2>
+  {% if user.is_authenticated %}
+  <a href="{% url 'sesion-create' %}" class="btn btn-primary">+ Nueva Sesion</a>
+  {% endif %}
 </div>
 
 {% if sesion_list %}
-<ul>
-  {% for sesion in sesion_list %}
-  <li>
-    {{ sesion.get_dia_display }}: {{ sesion.hora_inicio }} - {{ sesion.hora_fin }}
-    <a href="{% url 'sesion-update' sesion.id %}" style="margin-left: 10px;">Editar</a>
-    <a href="{% url 'sesion-delete' sesion.id %}" style="margin-left: 5px; color: red;">Eliminar</a>
-  </li>
-  {% endfor %}
-</ul>
+<div class="card">
+  <ul class="item-list">
+    {% for sesion in sesion_list %}
+    <li>
+      <div class="item-main">
+        <div class="item-title">{{ sesion.get_dia_display }}</div>
+        <div class="item-subtitle">{{ sesion.hora_inicio|time:"H:i" }} – {{ sesion.hora_fin|time:"H:i" }}</div>
+      </div>
+      <div class="item-actions">
+        {% if user.is_authenticated %}
+        <a href="{% url 'sesion-update' sesion.id %}" class="btn btn-outline btn-xs">Editar</a>
+        <a href="{% url 'sesion-delete' sesion.id %}" class="btn btn-danger btn-xs">Eliminar</a>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
 {% else %}
-<p>No hay sesiones registradas.</p>
+<div class="card">
+  <div class="card-body">
+    <div class="empty-state">
+      <h3 style="color: #999;">No hay sesiones registradas</h3>
+      {% if user.is_authenticated %}
+      <a href="{% url 'sesion-create' %}" class="btn btn-primary" style="margin-top: 14px;">+ Nueva Sesion</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
 {% endif %}
+
 {% endblock %}

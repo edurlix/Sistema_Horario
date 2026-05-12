@@ -1,13 +1,19 @@
 {% extends "base_generic.html" %}
 
+{% block title %}<title>Eliminar Profesor · Sistema de Horarios</title>{% endblock %}
+{% block page_title %}Eliminar Profesor{% endblock %}
+
 {% block content %}
-<h1>Eliminar Profesor</h1>
-
-<p>¿Estás seguro que quieres eliminar al profesor "{{ profesor.nombre }} {{ profesor.apellidos }}"?</p>
-
-<form method="post">
-    {% csrf_token %}
-    <button type="submit" style="background-color: #f44336; color: white; padding: 5px 10px;">Sí, eliminar</button>
-    <a href="{% url 'profesores' %}" style="margin-left: 10px;">Cancelar</a>
-</form>
+<div class="confirm-box">
+  <h2>Confirmar eliminacion</h2>
+  <p>Las asignaturas asociadas a este profesor perderan su profesor asignado, pero no seran eliminadas.</p>
+  <div class="subject-name">{{ profesor.apellidos }}, {{ profesor.nombre }}</div>
+  <div style="display: flex; gap: 10px;">
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">Eliminar</button>
+    </form>
+    <a href="{% url 'profesores' %}" class="btn btn-secondary">Cancelar</a>
+  </div>
+</div>
 {% endblock %}

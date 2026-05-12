@@ -5,247 +5,332 @@ from django.urls import reverse_lazy
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
-from .models import Profesor, Sesion, Asignatura
-from .forms import ProfesorForm, SesionForm, AsignaturaForm, AsignaturaSesionForm
-from collections import defaultdict
+from .models import Profesor, Sesion, Asignatura, Titulacion
+from .forms import ProfesorForm, SesionForm, AsignaturaForm, AsignaturaSesionForm, TitulacionForm
 
-# Función index (la que faltaba)
+
+DIAS_ORDER = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE']
+
+
+# ── Schedule generation ────────────────────────────────────────────────────────
+
+def detectar_conflictos():
+    """Return a list of human-readable conflict strings to display on the home page."""
+    conflictos = []
+
+    # Professor conflicts
+    for profesor in Profesor.objects.prefetch_related('asignaturas__sesiones'):
+        sesion_map = {}
+        for asignatura in profesor.asignaturas.all():
+            for sesion in asignatura.sesiones.all():
+                if sesion.id in sesion_map:
+                    conflictos.append(
+                        f"Conflicto de profesor: {profesor} imparte "
+                        f"'{asignatura.nombre}' y '{sesion_map[sesion.id].nombre}' "
+                        f"en la misma sesión ({sesion})."
+                    )
+                else:
+                    sesion_map[sesion.id] = asignatura
+
+    # Same titulación + curso + session conflicts (non-elective only)
+    for titulacion in Titulacion.objects.all():
+        for curso_num, curso_label in Asignatura.CURSOS:
+            asignaturas = list(
+                Asignatura.objects.filter(
+                    titulacion=titulacion, curso=curso_num, es_electiva=False
+                ).prefetch_related('sesiones')
+            )
+            sesion_map = {}
+            for asignatura in asignaturas:
+                for sesion in asignatura.sesiones.all():
+                    if sesion.id in sesion_map:
+                        conflictos.append(
+                            f"Conflicto en {titulacion} — {curso_label}: "
+                            f"'{asignatura.nombre}' y '{sesion_map[sesion.id].nombre}' "
+                            f"comparten la sesión '{sesion}'."
+                        )
+                    else:
+                        sesion_map[sesion.id] = asignatura
+
+    return conflictos
+
+
+def generar_horarios_por_titulacion():
+    """
+    Returns a list of dicts, one per titulación that has sessions configured:
+      { codigo, nombre, cursos: [ { numero, nombre, horario: [ { hora_inicio, hora_fin,
+        dias: [ { asignaturas: [{codigo, nombre, profesor, es_electiva}] } x5 ] } ] } ] }
+    """
+    all_asignaturas = list(
+        Asignatura.objects.select_related('titulacion', 'profesor')
+        .prefetch_related('sesiones')
+    )
+
+    result = []
+
+    for titulacion in Titulacion.objects.all():
+        asignaturas_tit = [a for a in all_asignaturas if a.titulacion_id == titulacion.id]
+        if not asignaturas_tit:
+            continue
+
+        tit_data = {
+            'codigo': titulacion.codigo,
+            'nombre': titulacion.nombre,
+            'cursos': [],
+        }
+
+        for curso_num, curso_nombre in Asignatura.CURSOS:
+            asignaturas_curso = [a for a in asignaturas_tit if a.curso == curso_num]
+            if not asignaturas_curso:
+                continue
+
+            # Collect unique time blocks used by this titulación + curso
+            bloques_dict = {}
+            for asignatura in asignaturas_curso:
+                for sesion in asignatura.sesiones.all():
+                    hora_key = (
+                        f"{sesion.hora_inicio.strftime('%H:%M')}"
+                        f"-{sesion.hora_fin.strftime('%H:%M')}"
+                    )
+                    if hora_key not in bloques_dict:
+                        bloques_dict[hora_key] = {
+                            'hora_inicio': sesion.hora_inicio,
+                            'hora_fin': sesion.hora_fin,
+                        }
+
+            if not bloques_dict:
+                continue
+
+            bloques = sorted(bloques_dict.values(), key=lambda x: x['hora_inicio'])
+
+            # Build the weekly grid
+            horario = []
+            for bloque in bloques:
+                dias_slots = []
+                for dia_code in DIAS_ORDER:
+                    asigs_in_slot = []
+                    for asignatura in asignaturas_curso:
+                        for sesion in asignatura.sesiones.all():
+                            if (
+                                sesion.dia == dia_code
+                                and sesion.hora_inicio == bloque['hora_inicio']
+                                and sesion.hora_fin == bloque['hora_fin']
+                            ):
+                                asigs_in_slot.append({
+                                    'codigo': asignatura.codigo,
+                                    'nombre': asignatura.nombre,
+                                    'profesor': (
+                                        str(asignatura.profesor)
+                                        if asignatura.profesor
+                                        else 'Sin profesor'
+                                    ),
+                                    'es_electiva': asignatura.es_electiva,
+                                })
+                    dias_slots.append({'asignaturas': asigs_in_slot})
+
+                horario.append({
+                    'hora_inicio': bloque['hora_inicio'],
+                    'hora_fin': bloque['hora_fin'],
+                    'dias': dias_slots,
+                })
+
+            tit_data['cursos'].append({
+                'numero': curso_num,
+                'nombre': curso_nombre,
+                'horario': horario,
+            })
+
+        if tit_data['cursos']:
+            result.append(tit_data)
+
+    return result
+
+
+# ── Home ───────────────────────────────────────────────────────────────────────
+
 def index(request):
     num_profesores = Profesor.objects.count()
     num_asignaturas = Asignatura.objects.count()
     num_sesiones = Sesion.objects.count()
-    
-    num_visits = request.session.get('num_visits', 0)
-    num_visits += 1
+
+    num_visits = request.session.get('num_visits', 0) + 1
     request.session['num_visits'] = num_visits
-    
-    # Verificar conflictos para mostrar alerta (RF-02)
-    conflictos = []
-    for asignatura in Asignatura.objects.all():
+
+    conflictos = detectar_conflictos()
+    horarios_titulaciones = generar_horarios_por_titulacion()
+
+    return render(request, 'index.html', {
+        'num_profesores': num_profesores,
+        'num_asignaturas': num_asignaturas,
+        'num_sesiones': num_sesiones,
+        'num_visits': num_visits,
+        'conflictos': conflictos,
+        'horarios_titulaciones': horarios_titulaciones,
+    })
+
+
+# ── Titulacion CRUD ────────────────────────────────────────────────────────────
+
+class TitulacionListView(generic.ListView):
+    model = Titulacion
+    template_name = 'horarios/titulacion_list.html'
+    context_object_name = 'titulacion_list'
+
+
+class TitulacionCreateView(LoginRequiredMixin, CreateView):
+    model = Titulacion
+    form_class = TitulacionForm
+    template_name = 'horarios/titulacion_form.html'
+    success_url = reverse_lazy('titulaciones')
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Titulación "{form.instance.nombre}" creada exitosamente.')
+        return super().form_valid(form)
+
+
+class TitulacionUpdateView(LoginRequiredMixin, UpdateView):
+    model = Titulacion
+    form_class = TitulacionForm
+    template_name = 'horarios/titulacion_form.html'
+    success_url = reverse_lazy('titulaciones')
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Titulación "{form.instance.nombre}" actualizada.')
+        return super().form_valid(form)
+
+
+class TitulacionDeleteView(LoginRequiredMixin, DeleteView):
+    model = Titulacion
+    template_name = 'horarios/titulacion_confirm_delete.html'
+    success_url = reverse_lazy('titulaciones')
+
+    def form_valid(self, form):
         try:
-            asignatura.clean()
-        except Exception as e:
-            conflictos.append(f"{asignatura.codigo}: {str(e)}")
-    
-    # Generar tabla de horario semanal
-    horario_semanal = generar_horario_semanal()
-    
-    return render(
-        request,
-        'index.html',
-        context={
-            'num_profesores': num_profesores,
-            'num_asignaturas': num_asignaturas,
-            'num_sesiones': num_sesiones,
-            'num_visits': num_visits,
-            'conflictos': conflictos,
-            'horario_semanal': horario_semanal,
-        }
-    )
+            nombre = self.get_object().nombre
+            result = super().form_valid(form)
+            messages.success(self.request, f'Titulación "{nombre}" eliminada.')
+            return result
+        except Exception:
+            messages.error(
+                self.request,
+                'No se puede eliminar esta titulación porque tiene asignaturas asociadas.',
+            )
+            return redirect('titulaciones')
 
-def generar_horario_semanal():
-    """Versión simplificada del horario semanal"""
-    
-    # Días de la semana
-    dias = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE']
-    dias_nombres = {'LUN': 'Lunes', 'MAR': 'Martes', 'MIE': 'Miércoles', 'JUE': 'Jueves', 'VIE': 'Viernes'}
-    
-    # Obtener todos los bloques horarios únicos ordenados
-    todas_sesiones = Sesion.objects.all().order_by('hora_inicio', 'dia')
-    
-    # Crear lista de bloques únicos
-    bloques_dict = {}
-    for sesion in todas_sesiones:
-        hora_key = f"{sesion.hora_inicio.strftime('%H:%M')}-{sesion.hora_fin.strftime('%H:%M')}"
-        if hora_key not in bloques_dict:
-            bloques_dict[hora_key] = {
-                'hora_inicio': sesion.hora_inicio,
-                'hora_fin': sesion.hora_fin,
-                'hora_key': hora_key
-            }
-    
-    bloques = list(bloques_dict.values())
-    bloques.sort(key=lambda x: x['hora_inicio'])
-    
-    # Crear estructura de datos para el horario
-    horario = []
-    for bloque in bloques:
-        fila = {
-            'hora_inicio': bloque['hora_inicio'],
-            'hora_fin': bloque['hora_fin'],
-            'lunes': None,
-            'martes': None,
-            'miercoles': None,
-            'jueves': None,
-            'viernes': None
-        }
-        horario.append(fila)
-    
-    # Llenar con asignaturas
-    asignaturas = Asignatura.objects.all().prefetch_related('sesiones', 'profesor')
-    
-    for asignatura in asignaturas:
-        for sesion in asignatura.sesiones.all():
-            hora_key = f"{sesion.hora_inicio.strftime('%H:%M')}-{sesion.hora_fin.strftime('%H:%M')}"
-            
-            # Encontrar la fila correspondiente
-            for fila in horario:
-                if f"{fila['hora_inicio'].strftime('%H:%M')}-{fila['hora_fin'].strftime('%H:%M')}" == hora_key:
-                    # Asignar al día correspondiente
-                    if sesion.dia == 'LUN':
-                        fila['lunes'] = {
-                            'codigo': asignatura.codigo,
-                            'nombre': asignatura.nombre,
-                            'profesor': str(asignatura.profesor) if asignatura.profesor else 'Sin prof',
-                            'titulacion': asignatura.get_titulacion_display(),
-                            'curso': asignatura.get_curso_display(),
-                            'asignatura': asignatura
-                        }
-                    elif sesion.dia == 'MAR':
-                        fila['martes'] = {
-                            'codigo': asignatura.codigo,
-                            'nombre': asignatura.nombre,
-                            'profesor': str(asignatura.profesor) if asignatura.profesor else 'Sin prof',
-                            'titulacion': asignatura.get_titulacion_display(),
-                            'curso': asignatura.get_curso_display(),
-                            'asignatura': asignatura
-                        }
-                    elif sesion.dia == 'MIE':
-                        fila['miercoles'] = {
-                            'codigo': asignatura.codigo,
-                            'nombre': asignatura.nombre,
-                            'profesor': str(asignatura.profesor) if asignatura.profesor else 'Sin prof',
-                            'titulacion': asignatura.get_titulacion_display(),
-                            'curso': asignatura.get_curso_display(),
-                            'asignatura': asignatura
-                        }
-                    elif sesion.dia == 'JUE':
-                        fila['jueves'] = {
-                            'codigo': asignatura.codigo,
-                            'nombre': asignatura.nombre,
-                            'profesor': str(asignatura.profesor) if asignatura.profesor else 'Sin prof',
-                            'titulacion': asignatura.get_titulacion_display(),
-                            'curso': asignatura.get_curso_display(),
-                            'asignatura': asignatura
-                        }
-                    elif sesion.dia == 'VIE':
-                        fila['viernes'] = {
-                            'codigo': asignatura.codigo,
-                            'nombre': asignatura.nombre,
-                            'profesor': str(asignatura.profesor) if asignatura.profesor else 'Sin prof',
-                            'titulacion': asignatura.get_titulacion_display(),
-                            'curso': asignatura.get_curso_display(),
-                            'asignatura': asignatura
-                        }
-                    break
-    
-    return horario
 
-# Vistas basadas en clases (ListView, DetailView)
+# ── List / Detail Views ────────────────────────────────────────────────────────
+
 class AsignaturaListView(generic.ListView):
     model = Asignatura
-    paginate_by = 10
+    paginate_by = 15
+
 
 class AsignaturaDetailView(generic.DetailView):
     model = Asignatura
 
+
 class ProfesorListView(generic.ListView):
     model = Profesor
-    paginate_by = 10
+    paginate_by = 15
+
 
 class ProfesorDetailView(generic.DetailView):
     model = Profesor
 
+
 class SesionListView(generic.ListView):
     model = Sesion
-    paginate_by = 10
+    paginate_by = 15
 
-# Vistas para Profesor CRUD
+
+# ── Profesor CRUD ──────────────────────────────────────────────────────────────
+
 class ProfesorCreateView(LoginRequiredMixin, CreateView):
     model = Profesor
     form_class = ProfesorForm
     template_name = 'horarios/profesor_form.html'
     success_url = reverse_lazy('profesores')
-    
+
     def form_valid(self, form):
         messages.success(self.request, 'Profesor creado exitosamente.')
         return super().form_valid(form)
+
 
 class ProfesorUpdateView(LoginRequiredMixin, UpdateView):
     model = Profesor
     form_class = ProfesorForm
     template_name = 'horarios/profesor_form.html'
     success_url = reverse_lazy('profesores')
-    
+
     def form_valid(self, form):
         messages.success(self.request, 'Profesor actualizado exitosamente.')
         return super().form_valid(form)
+
 
 class ProfesorDeleteView(LoginRequiredMixin, DeleteView):
     model = Profesor
     template_name = 'horarios/profesor_confirm_delete.html'
     success_url = reverse_lazy('profesores')
-    
-    def delete(self, request, *args, **kwargs):
-        messages.success(request, 'Profesor eliminado exitosamente.')
-        return super().delete(request, *args, **kwargs)
 
-# Vistas para Sesion CRUD
+    def form_valid(self, form):
+        messages.success(self.request, 'Profesor eliminado exitosamente.')
+        return super().form_valid(form)
+
+
+# ── Sesion CRUD ────────────────────────────────────────────────────────────────
+
 class SesionCreateView(LoginRequiredMixin, CreateView):
     model = Sesion
     form_class = SesionForm
     template_name = 'horarios/sesion_form.html'
     success_url = reverse_lazy('sesiones')
-    
+
     def form_valid(self, form):
         messages.success(self.request, 'Sesión creada exitosamente.')
         return super().form_valid(form)
+
 
 class SesionUpdateView(LoginRequiredMixin, UpdateView):
     model = Sesion
     form_class = SesionForm
     template_name = 'horarios/sesion_form.html'
     success_url = reverse_lazy('sesiones')
-    
+
     def form_valid(self, form):
         messages.success(self.request, 'Sesión actualizada exitosamente.')
         return super().form_valid(form)
+
 
 class SesionDeleteView(LoginRequiredMixin, DeleteView):
     model = Sesion
     template_name = 'horarios/sesion_confirm_delete.html'
     success_url = reverse_lazy('sesiones')
-    
-    def delete(self, request, *args, **kwargs):
-        messages.success(request, 'Sesión eliminada exitosamente.')
-        return super().delete(request, *args, **kwargs)
 
-# Vistas basadas en funciones para Asignatura (para evitar el error ManyToMany)
+    def form_valid(self, form):
+        messages.success(self.request, 'Sesión eliminada exitosamente.')
+        return super().form_valid(form)
+
+
+# ── Asignatura CRUD (function views to avoid M2M issues) ──────────────────────
+
 @login_required
 def asignatura_create(request):
     if request.method == 'POST':
-        # Crear una copia mutable del POST
         post_data = request.POST.copy()
-        
-        # Eliminar 'sesiones' si existe (para evitar el error)
-        if 'sesiones' in post_data:
-            del post_data['sesiones']
-        
+        post_data.pop('sesiones', None)
         form = AsignaturaForm(post_data)
         if form.is_valid():
             asignatura = form.save()
             messages.success(request, f'Asignatura "{asignatura.codigo}" creada exitosamente.')
             return redirect('asignaturas')
-        else:
-            messages.error(request, f'Error: {form.errors}')
     else:
         form = AsignaturaForm()
-    
     return render(request, 'horarios/asignatura_form.html', {'form': form})
+
+
 @login_required
 def asignatura_update(request, pk):
     asignatura = get_object_or_404(Asignatura, pk=pk)
-    
     if request.method == 'POST':
         form = AsignaturaForm(request.POST, instance=asignatura)
         if form.is_valid():
@@ -254,25 +339,23 @@ def asignatura_update(request, pk):
             return redirect('asignaturas')
     else:
         form = AsignaturaForm(instance=asignatura)
-    
-    return render(request, 'horarios/asignatura_form.html', {'form': form})
+    return render(request, 'horarios/asignatura_form.html', {'form': form, 'asignatura': asignatura})
+
 
 @login_required
 def asignatura_delete(request, pk):
     asignatura = get_object_or_404(Asignatura, pk=pk)
-    
     if request.method == 'POST':
         codigo = asignatura.codigo
         asignatura.delete()
         messages.success(request, f'Asignatura "{codigo}" eliminada exitosamente.')
         return redirect('asignaturas')
-    
     return render(request, 'horarios/asignatura_confirm_delete.html', {'asignatura': asignatura})
+
 
 @login_required
 def asignatura_sesiones(request, pk):
     asignatura = get_object_or_404(Asignatura, pk=pk)
-    
     if request.method == 'POST':
         form = AsignaturaSesionForm(request.POST, instance=asignatura)
         if form.is_valid():
@@ -281,5 +364,7 @@ def asignatura_sesiones(request, pk):
             return redirect('asignatura-detail', pk=asignatura.pk)
     else:
         form = AsignaturaSesionForm(instance=asignatura)
-    
-    return render(request, 'horarios/asignatura_sesion_form.html', {'form': form, 'asignatura': asignatura})
+    return render(request, 'horarios/asignatura_sesion_form.html', {
+        'form': form,
+        'asignatura': asignatura,
+    })

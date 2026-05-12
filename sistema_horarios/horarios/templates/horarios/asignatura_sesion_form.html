@@ -1,20 +1,61 @@
 {% extends "base_generic.html" %}
 
+{% block title %}<title>Sesiones de {{ asignatura.codigo }} · Sistema de Horarios</title>{% endblock %}
+{% block page_title %}Gestionar Sesiones{% endblock %}
+
 {% block content %}
-<h1>Gestionar Sesiones de {{ asignatura.codigo }} - {{ asignatura.nombre }}</h1>
 
-<p>Selecciona las sesiones que corresponden a esta asignatura:</p>
+<div class="page-header">
+  <h2>Sesiones de {{ asignatura.codigo }} — {{ asignatura.nombre }}</h2>
+  <a href="{% url 'asignatura-detail' asignatura.pk %}" class="btn btn-secondary btn-sm">Volver</a>
+</div>
 
-<form method="post">
-    {% csrf_token %}
-    
-    <div style="margin: 20px 0;">
-        {{ form.sesiones }}
-    </div>
-    
-    <button type="submit" style="background-color: #4CAF50; color: white; padding: 8px 15px; border: none; border-radius: 3px; cursor: pointer;">
-        Guardar Sesiones
-    </button>
-    <a href="{% url 'asignatura-detail' asignatura.pk %}" style="margin-left: 10px;">Cancelar</a>
-</form>
+{% if not asignatura.es_electiva %}
+<div class="alert alert-info" style="margin-bottom: 16px;">
+  Esta es una asignatura <strong>obligatoria</strong>. Solo puede ocupar una sesion por franja
+  horaria en su titulacion y curso. Para compartir franja, marque la asignatura como electiva.
+</div>
+{% else %}
+<div class="alert alert-warning" style="margin-bottom: 16px;">
+  Esta es una asignatura <strong>electiva</strong>. Puede compartir franja horaria con otras
+  electivas del mismo curso y titulacion.
+</div>
+{% endif %}
+
+<div class="form-card" style="max-width: 720px;">
+  <div class="card-header">Seleccionar Sesiones</div>
+  <div class="form-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>{{ form.sesiones.label }}</label>
+        {% if form.sesiones.errors %}
+        <div class="alert alert-danger" style="margin-bottom: 12px;">
+          {% for error in form.sesiones.errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+        <div class="sessions-grid">
+          {% for choice in form.sesiones %}
+          <label class="session-checkbox-item">
+            {{ choice.tag }}
+            <span>{{ choice.choice_label }}</span>
+          </label>
+          {% empty %}
+          <p style="color: #999; font-size: 0.85rem; grid-column: 1/-1;">
+            No hay sesiones disponibles.
+            <a href="{% url 'sesion-create' %}">Crear una sesion</a>.
+          </p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Guardar sesiones</button>
+        <a href="{% url 'asignatura-detail' asignatura.pk %}" class="btn btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
 {% endblock %}

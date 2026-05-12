@@ -1,19 +1,80 @@
 {% extends "base_generic.html" %}
 
+{% block title %}<title>{{ profesor.apellidos }}, {{ profesor.nombre }} · Sistema de Horarios</title>{% endblock %}
+{% block page_title %}Detalle de Profesor{% endblock %}
+
 {% block content %}
-<h1>{{ profesor.nombre }} {{ profesor.apellidos }}</h1>
 
-<p><strong>Email:</strong> {{ profesor.email|default:"No registrado" }}</p>
-
-<div style="margin-left:20px;margin-top:20px">
-  <h4>Asignaturas que imparte</h4>
-  {% for asignatura in profesor.asignaturas_set.all %}
-  <hr>
-  <p><a href="{{ asignatura.get_absolute_url }}">{{ asignatura.codigo }} - {{ asignatura.nombre }}</a></p>
-  <p><strong>Titulación:</strong> {{ asignatura.get_titulacion_display }}</p>
-  <p><strong>Curso:</strong> {{ asignatura.get_curso_display }}</p>
-  {% empty %}
-  <p>No tiene asignaturas asignadas.</p>
-  {% endfor %}
+<div class="page-header">
+  <h2>{{ profesor.apellidos }}, {{ profesor.nombre }}</h2>
+  <div style="display: flex; gap: 8px;">
+    {% if user.is_authenticated %}
+    <a href="{% url 'profesor-update' profesor.pk %}" class="btn btn-outline btn-sm">Editar</a>
+    <a href="{% url 'profesor-delete' profesor.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
+    {% endif %}
+    <a href="{% url 'profesores' %}" class="btn btn-secondary btn-sm">Volver</a>
+  </div>
 </div>
+
+<div class="detail-grid">
+  <div class="detail-field">
+    <div class="field-label">Nombre</div>
+    <div class="field-value">{{ profesor.nombre }}</div>
+  </div>
+  <div class="detail-field">
+    <div class="field-label">Apellidos</div>
+    <div class="field-value">{{ profesor.apellidos }}</div>
+  </div>
+  <div class="detail-field">
+    <div class="field-label">Correo electronico</div>
+    <div class="field-value">
+      {% if profesor.email %}
+        <a href="mailto:{{ profesor.email }}">{{ profesor.email }}</a>
+      {% else %}
+        <span style="color: #999;">No registrado</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Asignaturas que imparte</div>
+  {% if profesor.asignaturas.all %}
+  <ul class="item-list">
+    {% for asignatura in profesor.asignaturas.all %}
+    <li>
+      <div class="item-main">
+        <div class="item-title">
+          <a href="{{ asignatura.get_absolute_url }}">{{ asignatura.codigo }} — {{ asignatura.nombre }}</a>
+        </div>
+        <div class="item-subtitle">
+          {{ asignatura.titulacion.nombre }} · {{ asignatura.get_curso_display }}
+        </div>
+      </div>
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <span class="badge
+          {% if asignatura.titulacion.codigo == 'II' %}badge-blue
+          {% elif asignatura.titulacion.codigo == 'IR' %}badge-green
+          {% elif asignatura.titulacion.codigo == 'IT' %}badge-orange
+          {% elif asignatura.titulacion.codigo == 'DG' %}badge-purple
+          {% else %}badge-gray{% endif %}">
+          {{ asignatura.titulacion.codigo }}
+        </span>
+        <span class="badge badge-gray">{{ asignatura.get_curso_display }}</span>
+        {% if asignatura.es_electiva %}
+        <span class="badge badge-orange">Electiva</span>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="card-body">
+    <div class="empty-state" style="padding: 20px;">
+      <p style="color: #aaa;">Este profesor no tiene asignaturas asignadas.</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
 {% endblock %}

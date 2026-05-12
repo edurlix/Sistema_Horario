@@ -1,0 +1,30 @@
+{% extends "base_generic.html" %}
+
+{% block title %}<title>Eliminar Titulacion · Sistema de Horarios</title>{% endblock %}
+{% block page_title %}Eliminar Titulacion{% endblock %}
+
+{% block content %}
+<div class="confirm-box">
+  <h2>Confirmar eliminacion</h2>
+  <p>
+    Solo se puede eliminar una titulacion si <strong>no tiene asignaturas asociadas</strong>.
+    Si tiene asignaturas, debera eliminarlas primero o reasignarlas a otra titulacion.
+  </p>
+  <div class="subject-name">{{ titulacion.codigo }} — {{ titulacion.nombre }}</div>
+  {% if titulacion.asignaturas.count > 0 %}
+  <div class="alert alert-warning" style="margin-bottom: 16px;">
+    Esta titulacion tiene <strong>{{ titulacion.asignaturas.count }}</strong> asignatura(s) asociada(s).
+    No se puede eliminar hasta que esas asignaturas sean reasignadas o eliminadas.
+  </div>
+  <a href="{% url 'titulaciones' %}" class="btn btn-secondary">Volver</a>
+  {% else %}
+  <div style="display: flex; gap: 10px;">
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">Eliminar</button>
+    </form>
+    <a href="{% url 'titulaciones' %}" class="btn btn-secondary">Cancelar</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

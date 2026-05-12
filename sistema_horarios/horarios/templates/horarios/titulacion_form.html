@@ -1,0 +1,47 @@
+{% extends "base_generic.html" %}
+
+{% block title %}<title>{% if object %}Editar{% else %}Nueva{% endif %} Titulacion · Sistema de Horarios</title>{% endblock %}
+{% block page_title %}{% if object %}Editar Titulacion{% else %}Nueva Titulacion{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="form-card">
+  <div class="card-header">
+    {% if object %}Editar: {{ object }}{% else %}Nueva Titulacion{% endif %}
+  </div>
+  <div class="form-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">
+          {{ field.label }}{% if field.field.required %}<span class="required"> *</span>{% endif %}
+        </label>
+        {{ field }}
+        {% if field.help_text %}<p class="form-hint">{{ field.help_text }}</p>{% endif %}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      <div class="alert alert-info" style="margin-bottom: 16px; font-size: 0.8rem;">
+        El <strong>codigo</strong> se usara para identificar la titulacion en los horarios
+        (<em>II</em>, <em>IR</em>, <em>DGIR</em>).
+        El <strong>nombre</strong> es el texto completo que se mostrara al usuario.
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          {% if object %}Guardar cambios{% else %}Crear Titulacion{% endif %}
+        </button>
+        <a href="{% url 'titulaciones' %}" class="btn btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
