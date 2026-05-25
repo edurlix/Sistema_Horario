@@ -73,21 +73,23 @@ class AsignaturaForm(forms.ModelForm):
 
     class Meta:
         model = Asignatura
-        fields = ['codigo', 'nombre', 'titulacion', 'curso', 'es_electiva', 'profesor']
+        fields = ['codigo', 'nombre', 'titulacion', 'curso', 'cuatrimestre', 'es_electiva', 'profesor']
         labels = {
-            'codigo':      'Código',
-            'nombre':      'Nombre',
-            'titulacion':  'Titulación',
-            'curso':       'Curso',
-            'es_electiva': 'Es electiva',
-            'profesor':    'Profesor',
+            'codigo':       'Código',
+            'nombre':       'Nombre',
+            'titulacion':   'Titulación',
+            'curso':        'Curso',
+            'cuatrimestre': 'Cuatrimestre',
+            'es_electiva':  'Es electiva',
+            'profesor':     'Profesor',
         }
         widgets = {
-            'codigo':     forms.TextInput(attrs=FC),
-            'nombre':     forms.TextInput(attrs=FC),
-            'titulacion': forms.Select(attrs=FC),
-            'curso':      forms.Select(attrs=FC),
-            'profesor':   forms.Select(attrs=FC),
+            'codigo':       forms.TextInput(attrs=FC),
+            'nombre':       forms.TextInput(attrs=FC),
+            'titulacion':   forms.Select(attrs=FC),
+            'curso':        forms.Select(attrs=FC),
+            'cuatrimestre': forms.Select(attrs=FC),
+            'profesor':     forms.Select(attrs=FC),
         }
 
     def __init__(self, *args, **kwargs):
@@ -130,6 +132,7 @@ class AsignaturaSesionForm(forms.ModelForm):
                 conflicto = (
                     Asignatura.objects.filter(
                         profesor=asignatura.profesor,
+                        cuatrimestre=asignatura.cuatrimestre,
                         sesiones=sesion,
                         creado_por=self.user,
                     )
@@ -142,12 +145,13 @@ class AsignaturaSesionForm(forms.ModelForm):
                         f"'{conflicto.nombre}' en la sesion '{sesion}'."
                     )
 
-            # Non-elective course slot conflict
+            # Non-elective course slot conflict (same titulacion, curso and cuatrimestre)
             if not asignatura.es_electiva:
                 conflicto = (
                     Asignatura.objects.filter(
                         titulacion=asignatura.titulacion,
                         curso=asignatura.curso,
+                        cuatrimestre=asignatura.cuatrimestre,
                         sesiones=sesion,
                         es_electiva=False,
                         creado_por=self.user,
@@ -158,8 +162,8 @@ class AsignaturaSesionForm(forms.ModelForm):
                 if conflicto:
                     errores.append(
                         f"La sesion '{sesion}' ya esta ocupada por '{conflicto.nombre}' "
-                        f"(obligatoria de {asignatura.get_curso_display()} — "
-                        f"{asignatura.titulacion}). "
+                        f"(obligatoria de {asignatura.get_curso_display()}, "
+                        f"{asignatura.get_cuatrimestre_display()} — {asignatura.titulacion}). "
                         f"Solo las electivas pueden compartir franja horaria."
                     )
 

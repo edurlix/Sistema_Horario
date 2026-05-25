@@ -15,10 +15,41 @@ from .forms import (
     SesionForm,
     TitulacionForm,
 )
+from .filters import (
+    build_filter_qs,
+    count_active_filters,
+    filter_asignaturas,
+    filter_profesores,
+    filter_sesiones,
+    filter_titulaciones,
+)
 from .models import Asignatura, Profesor, Sesion, Titulacion
 
 
 DIAS_ORDER = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE']
+
+
+class ListFilterMixin:
+    """Adds filter context for dropdown filters and pagination."""
+
+    filter_list_keys = []
+
+    def get_filter_context(self):
+        user = self.request.user
+        return {
+            'filter_qs': build_filter_qs(self.request),
+            'active_filter_count': count_active_filters(
+                self.request, self.filter_list_keys
+            ),
+            'titulaciones_filtro': Titulacion.objects.filter(creado_por=user),
+            'cursos_filtro': Asignatura.CURSOS,
+            'dias_filtro': Sesion.DIAS_SEMANA,
+        }
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self.get_filter_context())
+        return context
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -26,47 +57,104 @@ DIAS_ORDER = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE']
 def detectar_conflictos(user):
     conflictos = []
 
-    # Professor conflicts
+    # Professor conflicts (within the same cuatrimestre)
     for profesor in (
         Profesor.objects.filter(creado_por=user)
         .prefetch_related('asignaturas__sesiones')
     ):
-        sesion_map = {}
-        for asignatura in profesor.asignaturas.filter(creado_por=user):
-            for sesion in asignatura.sesiones.all():
-                if sesion.id in sesion_map:
-                    conflictos.append(
-                        f"Conflicto de profesor: {profesor} imparte "
-                        f"'{asignatura.nombre}' y '{sesion_map[sesion.id].nombre}' "
-                        f"en la misma sesion ({sesion})."
-                    )
-                else:
-                    sesion_map[sesion.id] = asignatura
-
-    # Same titulacion + curso + session for non-elective subjects
-    for titulacion in Titulacion.objects.filter(creado_por=user):
-        for curso_num, curso_label in Asignatura.CURSOS:
-            asignaturas = list(
-                Asignatura.objects.filter(
-                    titulacion=titulacion,
-                    curso=curso_num,
-                    es_electiva=False,
-                    creado_por=user,
-                ).prefetch_related('sesiones')
-            )
+        for cuat_num, cuat_label in Asignatura.CUATRIMESTRES:
             sesion_map = {}
-            for asignatura in asignaturas:
+            for asignatura in profesor.asignaturas.filter(
+                creado_por=user, cuatrimestre=cuat_num
+            ):
                 for sesion in asignatura.sesiones.all():
                     if sesion.id in sesion_map:
                         conflictos.append(
-                            f"Conflicto en {titulacion} — {curso_label}: "
+                            f"Conflicto de profesor ({cuat_label}): {profesor} imparte "
                             f"'{asignatura.nombre}' y '{sesion_map[sesion.id].nombre}' "
-                            f"comparten la sesion '{sesion}'."
+                            f"en la misma sesion ({sesion})."
                         )
                     else:
                         sesion_map[sesion.id] = asignatura
 
+    # Same titulacion + curso + cuatrimestre + session for non-elective subjects
+    for titulacion in Titulacion.objects.filter(creado_por=user):
+        for curso_num, curso_label in Asignatura.CURSOS:
+            for cuat_num, cuat_label in Asignatura.CUATRIMESTRES:
+                asignaturas = list(
+                    Asignatura.objects.filter(
+                        titulacion=titulacion,
+                        curso=curso_num,
+                        cuatrimestre=cuat_num,
+                        es_electiva=False,
+                        creado_por=user,
+                    ).prefetch_related('sesiones')
+                )
+                sesion_map = {}
+                for asignatura in asignaturas:
+                    for sesion in asignatura.sesiones.all():
+                        if sesion.id in sesion_map:
+                            conflictos.append(
+                                f"Conflicto en {titulacion} — {curso_label}, {cuat_label}: "
+                                f"'{asignatura.nombre}' y '{sesion_map[sesion.id].nombre}' "
+                                f"comparten la sesion '{sesion}'."
+                            )
+                        else:
+                            sesion_map[sesion.id] = asignatura
+
     return conflictos
+
+
+def _construir_horario(asignaturas):
+    """Build a weekly grid from a list of Asignatura instances."""
+    bloques_dict = {}
+    for asignatura in asignaturas:
+        for sesion in asignatura.sesiones.all():
+            hora_key = (
+                f"{sesion.hora_inicio.strftime('%H:%M')}"
+                f"-{sesion.hora_fin.strftime('%H:%M')}"
+            )
+            if hora_key not in bloques_dict:
+                bloques_dict[hora_key] = {
+                    'hora_inicio': sesion.hora_inicio,
+                    'hora_fin': sesion.hora_fin,
+                }
+
+    if not bloques_dict:
+        return []
+
+    bloques = sorted(bloques_dict.values(), key=lambda x: x['hora_inicio'])
+    horario = []
+
+    for bloque in bloques:
+        dias_slots = []
+        for dia_code in DIAS_ORDER:
+            asigs_in_slot = []
+            for asignatura in asignaturas:
+                for sesion in asignatura.sesiones.all():
+                    if (
+                        sesion.dia == dia_code
+                        and sesion.hora_inicio == bloque['hora_inicio']
+                        and sesion.hora_fin == bloque['hora_fin']
+                    ):
+                        asigs_in_slot.append({
+                            'codigo': asignatura.codigo,
+                            'nombre': asignatura.nombre,
+                            'profesor': (
+                                str(asignatura.profesor)
+                                if asignatura.profesor else 'Sin profesor'
+                            ),
+                            'es_electiva': asignatura.es_electiva,
+                        })
+            dias_slots.append({'asignaturas': asigs_in_slot})
+
+        horario.append({
+            'hora_inicio': bloque['hora_inicio'],
+            'hora_fin': bloque['hora_fin'],
+            'dias': dias_slots,
+        })
+
+    return horario
 
 
 def generar_horarios_por_titulacion(user):
@@ -90,57 +178,27 @@ def generar_horarios_por_titulacion(user):
             if not asignaturas_curso:
                 continue
 
-            bloques_dict = {}
-            for asignatura in asignaturas_curso:
-                for sesion in asignatura.sesiones.all():
-                    hora_key = (
-                        f"{sesion.hora_inicio.strftime('%H:%M')}"
-                        f"-{sesion.hora_fin.strftime('%H:%M')}"
-                    )
-                    if hora_key not in bloques_dict:
-                        bloques_dict[hora_key] = {
-                            'hora_inicio': sesion.hora_inicio,
-                            'hora_fin': sesion.hora_fin,
-                        }
-
-            if not bloques_dict:
-                continue
-
-            bloques = sorted(bloques_dict.values(), key=lambda x: x['hora_inicio'])
-
-            horario = []
-            for bloque in bloques:
-                dias_slots = []
-                for dia_code in DIAS_ORDER:
-                    asigs_in_slot = []
-                    for asignatura in asignaturas_curso:
-                        for sesion in asignatura.sesiones.all():
-                            if (
-                                sesion.dia == dia_code
-                                and sesion.hora_inicio == bloque['hora_inicio']
-                                and sesion.hora_fin == bloque['hora_fin']
-                            ):
-                                asigs_in_slot.append({
-                                    'codigo': asignatura.codigo,
-                                    'nombre': asignatura.nombre,
-                                    'profesor': (
-                                        str(asignatura.profesor)
-                                        if asignatura.profesor else 'Sin profesor'
-                                    ),
-                                    'es_electiva': asignatura.es_electiva,
-                                })
-                    dias_slots.append({'asignaturas': asigs_in_slot})
-
-                horario.append({
-                    'hora_inicio': bloque['hora_inicio'],
-                    'hora_fin': bloque['hora_fin'],
-                    'dias': dias_slots,
+            cuatrimestres_data = []
+            for cuat_num, cuat_nombre in Asignatura.CUATRIMESTRES:
+                asignaturas_cuat = [
+                    a for a in asignaturas_curso if a.cuatrimestre == cuat_num
+                ]
+                horario = _construir_horario(asignaturas_cuat)
+                if not horario:
+                    continue
+                cuatrimestres_data.append({
+                    'numero': cuat_num,
+                    'nombre': cuat_nombre,
+                    'horario': horario,
                 })
+
+            if not cuatrimestres_data:
+                continue
 
             tit_data['cursos'].append({
                 'numero': curso_num,
                 'nombre': curso_nombre,
-                'horario': horario,
+                'cuatrimestres': cuatrimestres_data,
             })
 
         if tit_data['cursos']:
@@ -193,13 +251,16 @@ def index(request):
 
 # ── Titulacion CRUD ────────────────────────────────────────────────────────────
 
-class TitulacionListView(LoginRequiredMixin, generic.ListView):
+class TitulacionListView(ListFilterMixin, LoginRequiredMixin, generic.ListView):
     model = Titulacion
     template_name = 'horarios/titulacion_list.html'
     context_object_name = 'titulacion_list'
+    paginate_by = 15
+    filter_list_keys = []
 
     def get_queryset(self):
-        return Titulacion.objects.filter(creado_por=self.request.user)
+        qs = Titulacion.objects.filter(creado_por=self.request.user)
+        return filter_titulaciones(qs, self.request)
 
 
 class TitulacionCreateView(LoginRequiredMixin, CreateView):
@@ -252,14 +313,16 @@ class TitulacionDeleteView(LoginRequiredMixin, DeleteView):
 
 # ── Asignatura list/detail ─────────────────────────────────────────────────────
 
-class AsignaturaListView(LoginRequiredMixin, generic.ListView):
+class AsignaturaListView(ListFilterMixin, LoginRequiredMixin, generic.ListView):
     model = Asignatura
     paginate_by = 15
+    filter_list_keys = ['titulacion', 'curso', 'tipo']
 
     def get_queryset(self):
-        return Asignatura.objects.filter(creado_por=self.request.user).select_related(
+        qs = Asignatura.objects.filter(creado_por=self.request.user).select_related(
             'titulacion', 'profesor'
         )
+        return filter_asignaturas(qs, self.request)
 
 
 class AsignaturaDetailView(LoginRequiredMixin, generic.DetailView):
@@ -271,12 +334,14 @@ class AsignaturaDetailView(LoginRequiredMixin, generic.DetailView):
 
 # ── Profesor list/detail ───────────────────────────────────────────────────────
 
-class ProfesorListView(LoginRequiredMixin, generic.ListView):
+class ProfesorListView(ListFilterMixin, LoginRequiredMixin, generic.ListView):
     model = Profesor
     paginate_by = 15
+    filter_list_keys = ['titulacion']
 
     def get_queryset(self):
-        return Profesor.objects.filter(creado_por=self.request.user)
+        qs = Profesor.objects.filter(creado_por=self.request.user)
+        return filter_profesores(qs, self.request)
 
 
 class ProfesorDetailView(LoginRequiredMixin, generic.DetailView):
@@ -288,12 +353,14 @@ class ProfesorDetailView(LoginRequiredMixin, generic.DetailView):
 
 # ── Sesion list ────────────────────────────────────────────────────────────────
 
-class SesionListView(LoginRequiredMixin, generic.ListView):
+class SesionListView(ListFilterMixin, LoginRequiredMixin, generic.ListView):
     model = Sesion
     paginate_by = 15
+    filter_list_keys = ['dia', 'titulacion']
 
     def get_queryset(self):
-        return Sesion.objects.filter(creado_por=self.request.user)
+        qs = Sesion.objects.filter(creado_por=self.request.user)
+        return filter_sesiones(qs, self.request)
 
 
 # ── Profesor CRUD ──────────────────────────────────────────────────────────────

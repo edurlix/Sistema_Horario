@@ -35,6 +35,10 @@
     <div class="field-value">{{ asignatura.get_curso_display }}</div>
   </div>
   <div class="detail-field">
+    <div class="field-label">Cuatrimestre</div>
+    <div class="field-value">{{ asignatura.get_cuatrimestre_display }}</div>
+  </div>
+  <div class="detail-field">
     <div class="field-label">Tipo</div>
     <div class="field-value">
       {% if asignatura.es_electiva %}

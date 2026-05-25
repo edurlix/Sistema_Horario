@@ -242,6 +242,17 @@ ul, ol { padding-left: 1.2em; }
     margin-bottom: 24px;
     flex-wrap: wrap;
     gap: 12px;
+    overflow: visible;
+    position: relative;
+    z-index: 50;
+}
+
+.page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    overflow: visible;
 }
 
 .page-header h2 {
@@ -574,6 +585,22 @@ table.schedule-table tbody td.time-col .time-end {
     font-size: 0.8rem;
 }
 
+.schedule-cell.electiva {
+    background: linear-gradient(135deg, #5d4037 0%, #8d6e63 100%);
+}
+
+.cell-tag {
+    display: inline-block;
+    margin-top: 3px;
+    font-size: 0.62rem;
+    background: rgba(255,255,255,0.2);
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.3px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
 /* ===== TITULACIÓN SECTIONS ===== */
 .titulacion-block { margin-bottom: 34px; }
 
@@ -639,6 +666,20 @@ table.schedule-table tbody td.time-col .time-end {
 }
 
 .tab-panels { padding: 16px; }
+
+.tab-panels-sub { padding: 0 0 4px; }
+
+.tab-bar-sub {
+  background: #f0f0f0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 0 12px;
+}
+
+.tab-bar-sub .tab-btn {
+  font-size: 0.78rem;
+  padding: 9px 14px;
+}
 
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
@@ -816,6 +857,111 @@ table.schedule-table tbody td.time-col .time-end {
 .login-header p  { font-size: 0.78rem; opacity: 0.78; }
 
 .login-body { padding: 28px 24px; }
+
+/* ===== FILTER FLOAT ===== */
+.filter-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+.filter-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 96px;
+}
+
+.filter-wrap.is-open .filter-trigger {
+    background: var(--off-white);
+    border-color: var(--crimson);
+    color: var(--crimson);
+}
+
+.filter-badge {
+    background: var(--crimson);
+    color: white;
+    font-size: 0.68rem;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px;
+    text-align: center;
+    border-radius: 9px;
+    padding: 0 5px;
+}
+
+/* Capa flotante: oculta por defecto, no ocupa espacio */
+.filter-float {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.filter-float.is-visible,
+.filter-wrap.is-open .filter-float {
+    display: block;
+    pointer-events: auto;
+}
+
+.filter-float-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(44, 44, 44, 0.15);
+}
+
+.filter-float-box {
+    position: fixed;
+    z-index: 10000;
+    width: 300px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    padding: 16px;
+}
+
+.filter-float-box-wide { width: 320px; }
+
+.filter-float-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--crimson);
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.filter-float-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.filter-field label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--charcoal);
+    margin-bottom: 5px;
+}
+
+.filter-field .form-control {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+}
+
+.filter-float-footer {
+    display: flex;
+    gap: 8px;
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border-light);
+}
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {

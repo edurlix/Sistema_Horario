@@ -5,7 +5,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% block title %}<title>Sistema de Horarios</title>{% endblock %}
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=3">
+  <style>
+    /* Crítico: ocultar filtro aunque falle la carga del CSS externo */
+    .filter-float { display: none !important; }
+    .filter-float.is-visible { display: block !important; }
+  </style>
 </head>
 <body>
 <div class="layout">
@@ -90,20 +95,102 @@
 
       {% block pagination %}
         {% if is_paginated %}
-          <div class="pagination">
-            {% if page_obj.has_previous %}
-              <a href="{{ request.path }}?page={{ page_obj.previous_page_number }}">Anterior</a>
-            {% endif %}
-            <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-            {% if page_obj.has_next %}
-              <a href="{{ request.path }}?page={{ page_obj.next_page_number }}">Siguiente</a>
-            {% endif %}
-          </div>
+          {% include "horarios/includes/filter_pagination.html" %}
         {% endif %}
       {% endblock %}
     </div>
   </div>
 
 </div>
+<script>
+(function() {
+  var filterLayers = [];
+
+  function initFilters() {
+    document.querySelectorAll('.filter-wrap').forEach(function(wrap) {
+      var btn = wrap.querySelector('.filter-trigger');
+      var layer = wrap.querySelector('.filter-float');
+      if (!btn || !layer) return;
+
+      document.body.appendChild(layer);
+      layer._filterWrap = wrap;
+      filterLayers.push(layer);
+
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var isOpen = layer.classList.contains('is-visible');
+        closeAllFilters();
+        if (!isOpen) {
+          layer.removeAttribute('hidden');
+          layer.classList.add('is-visible');
+          wrap.classList.add('is-open');
+          btn.setAttribute('aria-expanded', 'true');
+          layer.setAttribute('aria-hidden', 'false');
+          positionFloatBox(layer, btn);
+        }
+      });
+    });
+
+    filterLayers.forEach(function(layer) {
+      var backdrop = layer.querySelector('.filter-float-backdrop');
+      var box = layer.querySelector('.filter-float-box');
+      if (backdrop) backdrop.addEventListener('click', closeAllFilters);
+      if (box) box.addEventListener('click', function(e) { e.stopPropagation(); });
+    });
+  }
+
+  function positionFloatBox(layer, btn) {
+    var box = layer.querySelector('.filter-float-box');
+    if (!btn || !box) return;
+    var rect = btn.getBoundingClientRect();
+    var boxW = box.offsetWidth || 300;
+    var boxH = box.offsetHeight || 200;
+    var margin = 12;
+    var top = rect.bottom + 8;
+    var left = rect.left;
+    if (left + boxW > window.innerWidth - margin) {
+      left = window.innerWidth - boxW - margin;
+    }
+    if (left < margin) left = margin;
+    if (top + boxH > window.innerHeight - margin) {
+      top = Math.max(margin, rect.top - boxH - 8);
+    }
+    box.style.top = top + 'px';
+    box.style.left = left + 'px';
+  }
+
+  function closeAllFilters() {
+    filterLayers.forEach(function(layer) {
+      layer.classList.remove('is-visible');
+      layer.setAttribute('hidden', '');
+      layer.setAttribute('aria-hidden', 'true');
+      var wrap = layer._filterWrap;
+      if (wrap) {
+        wrap.classList.remove('is-open');
+        var btn = wrap.querySelector('.filter-trigger');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeAllFilters();
+  });
+
+  window.addEventListener('resize', function() {
+    filterLayers.forEach(function(layer) {
+      if (layer.classList.contains('is-visible')) {
+        positionFloatBox(layer, layer._filterWrap.querySelector('.filter-trigger'));
+      }
+    });
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFilters);
+  } else {
+    initFilters();
+  }
+})();
+</script>
 </body>
 </html>

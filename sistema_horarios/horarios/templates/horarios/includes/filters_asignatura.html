@@ -1,0 +1,55 @@
+<div class="filter-wrap">
+  <button type="button" class="btn btn-secondary filter-trigger" aria-expanded="false">
+    Filtrar
+    {% if active_filter_count %}<span class="filter-badge">{{ active_filter_count }}</span>{% endif %}
+  </button>
+
+  <div class="filter-float" aria-hidden="true" hidden>
+    <div class="filter-float-backdrop"></div>
+    <div class="filter-float-box filter-float-box-wide">
+      <div class="filter-float-title">Filtrar asignaturas</div>
+      <form method="get" class="filter-float-form">
+        <div class="filter-field">
+          <label for="filtro-q-asig">Asignatura o profesor</label>
+          <input type="text" id="filtro-q-asig" name="q" class="form-control"
+                 value="{{ request.GET.q|default:'' }}"
+                 placeholder="Nombre de asignatura o profesor...">
+        </div>
+        <div class="filter-field">
+          <label for="filtro-titulacion-asig">Titulacion</label>
+          <select id="filtro-titulacion-asig" name="titulacion" class="form-control">
+            <option value="">Todas</option>
+            {% for t in titulaciones_filtro %}
+            <option value="{{ t.id }}" {% if request.GET.titulacion == t.id|stringformat:"s" %}selected{% endif %}>
+              {{ t.nombre }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-field">
+          <label for="filtro-curso-asig">Curso</label>
+          <select id="filtro-curso-asig" name="curso" class="form-control">
+            <option value="">Todos</option>
+            {% for val, label in cursos_filtro %}
+            <option value="{{ val }}" {% if request.GET.curso == val|stringformat:"s" %}selected{% endif %}>
+              {{ label }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-field">
+          <label for="filtro-tipo-asig">Tipo</label>
+          <select id="filtro-tipo-asig" name="tipo" class="form-control">
+            <option value="">Todos</option>
+            <option value="obligatoria" {% if request.GET.tipo == 'obligatoria' %}selected{% endif %}>Obligatoria</option>
+            <option value="electiva" {% if request.GET.tipo == 'electiva' %}selected{% endif %}>Electiva</option>
+          </select>
+        </div>
+        <div class="filter-float-footer">
+          <button type="submit" class="btn btn-primary btn-sm">Aplicar</button>
+          <a href="{{ request.path }}" class="btn btn-secondary btn-sm">Limpiar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

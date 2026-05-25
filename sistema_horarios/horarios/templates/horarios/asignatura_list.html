@@ -7,9 +7,10 @@
 
 <div class="page-header">
   <h2>Listado de Asignaturas</h2>
-  {% if user.is_authenticated %}
-  <a href="{% url 'asignatura-create' %}" class="btn btn-primary">+ Nueva Asignatura</a>
-  {% endif %}
+  <div class="page-header-actions">
+    {% include "horarios/includes/filters_asignatura.html" %}
+    <a href="{% url 'asignatura-create' %}" class="btn btn-primary">+ Nueva Asignatura</a>
+  </div>
 </div>
 
 {% if asignatura_list %}
@@ -22,6 +23,7 @@
           <th>Nombre</th>
           <th>Titulación</th>
           <th>Curso</th>
+          <th>Cuatrimestre</th>
           <th>Tipo</th>
           <th>Profesor</th>
           <th>Acciones</th>
@@ -47,6 +49,7 @@
             </span>
           </td>
           <td><span class="badge badge-gray">{{ asignatura.get_curso_display }}</span></td>
+          <td><span class="badge badge-gray">{{ asignatura.get_cuatrimestre_display }}</span></td>
           <td>
             {% if asignatura.es_electiva %}
             <span class="badge badge-orange">Electiva</span>
@@ -74,8 +77,10 @@
 <div class="card">
   <div class="card-body">
     <div class="empty-state">
-      <h3 style="color: #999;">No hay asignaturas registradas</h3>
-      {% if user.is_authenticated %}
+      <h3 style="color: #999;">
+        {% if request.GET %}No hay asignaturas que coincidan con el filtro{% else %}No hay asignaturas registradas{% endif %}
+      </h3>
+      {% if not request.GET %}
       <a href="{% url 'asignatura-create' %}" class="btn btn-primary" style="margin-top: 14px;">+ Nueva Asignatura</a>
       {% endif %}
     </div>

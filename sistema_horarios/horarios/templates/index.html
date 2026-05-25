@@ -37,7 +37,7 @@
 </div>
 {% endif %}
 
-<!-- Timetables per degree + year -->
+<!-- Timetables per degree + course + cuatrimestre -->
 {% if horarios_titulaciones %}
 
   {% for tit in horarios_titulaciones %}
@@ -49,11 +49,12 @@
     </div>
 
     <div class="card">
-      <div class="tab-bar" id="tabbar-{{ tit.codigo }}">
+      <!-- Course tabs -->
+      <div class="tab-bar">
         {% for curso in tit.cursos %}
         <button
           class="tab-btn {% if forloop.first %}active{% endif %}"
-          onclick="switchTab('{{ tit.codigo }}', {{ curso.numero }}, this)">
+          onclick="switchCursoTab('{{ tit.codigo }}', {{ curso.numero }}, this)">
           {{ curso.nombre }}
         </button>
         {% endfor %}
@@ -62,56 +63,76 @@
       <div class="tab-panels">
         {% for curso in tit.cursos %}
         <div class="tab-panel {% if forloop.first %}active{% endif %}"
-             id="panel-{{ tit.codigo }}-{{ curso.numero }}">
+             id="curso-{{ tit.codigo }}-{{ curso.numero }}">
 
-          {% if curso.horario %}
-          <div class="table-wrapper" style="border-radius: 0 0 6px 6px;">
-            <table class="schedule-table">
-              <thead>
-                <tr>
-                  <th>Hora</th>
-                  <th>Lunes</th>
-                  <th>Martes</th>
-                  <th>Miércoles</th>
-                  <th>Jueves</th>
-                  <th>Viernes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for fila in curso.horario %}
-                <tr>
-                  <td class="time-col">
-                    {{ fila.hora_inicio|time:"H:i" }}
-                    <span class="time-end">{{ fila.hora_fin|time:"H:i" }}</span>
-                  </td>
-                  {% for dia_slot in fila.dias %}
-                  <td>
-                    {% if dia_slot.asignaturas %}
-                      {% for asig in dia_slot.asignaturas %}
-                      <div class="schedule-cell {% if asig.es_electiva %}electiva{% endif %}">
-                        <div class="cell-code">{{ asig.codigo }}</div>
-                        <div class="cell-name">{{ asig.nombre }}</div>
-                        <div class="cell-prof">{{ asig.profesor }}</div>
-                        {% if asig.es_electiva %}
-                        <div class="cell-tag">Electiva</div>
+          <!-- Cuatrimestre sub-tabs -->
+          <div class="tab-bar tab-bar-sub">
+            {% for cuat in curso.cuatrimestres %}
+            <button
+              class="tab-btn {% if forloop.first %}active{% endif %}"
+              onclick="switchCuatrimestreTab('{{ tit.codigo }}', {{ curso.numero }}, {{ cuat.numero }}, this)">
+              {{ cuat.nombre }}
+            </button>
+            {% endfor %}
+          </div>
+
+          <div class="tab-panels tab-panels-sub">
+            {% for cuat in curso.cuatrimestres %}
+            <div class="tab-panel {% if forloop.first %}active{% endif %}"
+                 id="cuat-{{ tit.codigo }}-{{ curso.numero }}-{{ cuat.numero }}">
+
+              {% if cuat.horario %}
+              <div class="table-wrapper" style="border-radius: 0 0 6px 6px;">
+                <table class="schedule-table">
+                  <thead>
+                    <tr>
+                      <th>Hora</th>
+                      <th>Lunes</th>
+                      <th>Martes</th>
+                      <th>Miercoles</th>
+                      <th>Jueves</th>
+                      <th>Viernes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for fila in cuat.horario %}
+                    <tr>
+                      <td class="time-col">
+                        {{ fila.hora_inicio|time:"H:i" }}
+                        <span class="time-end">{{ fila.hora_fin|time:"H:i" }}</span>
+                      </td>
+                      {% for dia_slot in fila.dias %}
+                      <td>
+                        {% if dia_slot.asignaturas %}
+                          {% for asig in dia_slot.asignaturas %}
+                          <div class="schedule-cell {% if asig.es_electiva %}electiva{% endif %}">
+                            <div class="cell-code">{{ asig.codigo }}</div>
+                            <div class="cell-name">{{ asig.nombre }}</div>
+                            <div class="cell-prof">{{ asig.profesor }}</div>
+                            {% if asig.es_electiva %}
+                            <div class="cell-tag">Electiva</div>
+                            {% endif %}
+                          </div>
+                          {% endfor %}
+                        {% else %}
+                          <div class="empty-slot">—</div>
                         {% endif %}
-                      </div>
+                      </td>
                       {% endfor %}
-                    {% else %}
-                      <div class="empty-slot">—</div>
-                    {% endif %}
-                  </td>
-                  {% endfor %}
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+              <div class="empty-state" style="padding: 24px;">
+                <p>No hay sesiones programadas para este cuatrimestre.</p>
+              </div>
+              {% endif %}
+
+            </div>
+            {% endfor %}
           </div>
-          {% else %}
-          <div class="empty-state" style="padding: 24px;">
-            <p>No hay sesiones programadas para este curso.</p>
-          </div>
-          {% endif %}
 
         </div>
         {% endfor %}
@@ -125,12 +146,11 @@
 <div class="card">
   <div class="card-body">
     <div class="empty-state">
-      <div style="font-size: 2rem; margin-bottom: 12px; color: #ccc;">&#9776;</div>
       <h3 style="color: #999;">Sin horarios configurados</h3>
-      <p>Crea asignaturas y asígnalas a sesiones para ver los horarios aquí.</p>
+      <p>Crea asignaturas y asignalas a sesiones para ver los horarios aqui.</p>
       <div style="margin-top: 16px; display: flex; gap: 10px; justify-content: center;">
         <a href="{% url 'asignatura-create' %}" class="btn btn-primary btn-sm">+ Asignatura</a>
-        <a href="{% url 'sesion-create' %}" class="btn btn-secondary btn-sm">+ Sesión</a>
+        <a href="{% url 'sesion-create' %}" class="btn btn-secondary btn-sm">+ Sesion</a>
       </div>
     </div>
   </div>
@@ -138,12 +158,28 @@
 {% endif %}
 
 <script>
-function switchTab(titCodigo, cursoNum, btn) {
+function switchCursoTab(titCodigo, cursoNum, btn) {
   var card = btn.closest('.card');
-  card.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-  card.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+  card.querySelectorAll(':scope > .tab-bar > .tab-btn').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  card.querySelectorAll(':scope > .tab-panels > .tab-panel').forEach(function(p) {
+    p.classList.remove('active');
+  });
   btn.classList.add('active');
-  document.getElementById('panel-' + titCodigo + '-' + cursoNum).classList.add('active');
+  document.getElementById('curso-' + titCodigo + '-' + cursoNum).classList.add('active');
+}
+
+function switchCuatrimestreTab(titCodigo, cursoNum, cuatNum, btn) {
+  var cursoPanel = document.getElementById('curso-' + titCodigo + '-' + cursoNum);
+  cursoPanel.querySelectorAll('.tab-bar-sub .tab-btn').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  cursoPanel.querySelectorAll('.tab-panels-sub .tab-panel').forEach(function(p) {
+    p.classList.remove('active');
+  });
+  btn.classList.add('active');
+  document.getElementById('cuat-' + titCodigo + '-' + cursoNum + '-' + cuatNum).classList.add('active');
 }
 </script>
 

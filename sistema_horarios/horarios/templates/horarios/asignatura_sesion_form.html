@@ -12,13 +12,16 @@
 
 {% if not asignatura.es_electiva %}
 <div class="alert alert-info" style="margin-bottom: 16px;">
-  Esta es una asignatura <strong>obligatoria</strong>. Solo puede ocupar una sesion por franja
-  horaria en su titulacion y curso. Para compartir franja, marque la asignatura como electiva.
+  Esta es una asignatura <strong>obligatoria</strong> de
+  <strong>{{ asignatura.get_cuatrimestre_display }}</strong>.
+  Solo puede ocupar una sesion por franja en su titulacion, curso y cuatrimestre.
+  Para compartir franja, marque la asignatura como electiva.
 </div>
 {% else %}
 <div class="alert alert-warning" style="margin-bottom: 16px;">
-  Esta es una asignatura <strong>electiva</strong>. Puede compartir franja horaria con otras
-  electivas del mismo curso y titulacion.
+  Esta es una asignatura <strong>electiva</strong> de
+  <strong>{{ asignatura.get_cuatrimestre_display }}</strong>.
+  Puede compartir franja horaria con otras electivas del mismo curso y cuatrimestre.
 </div>
 {% endif %}
 

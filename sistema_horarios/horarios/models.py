@@ -76,6 +76,11 @@ class Asignatura(models.Model):
         (5, '5º Curso'),
     ]
 
+    CUATRIMESTRES = [
+        (1, '1er Cuatrimestre'),
+        (2, '2do Cuatrimestre'),
+    ]
+
     nombre = models.CharField(max_length=200)
     codigo = models.CharField(max_length=20)
     titulacion = models.ForeignKey(
@@ -85,10 +90,13 @@ class Asignatura(models.Model):
         verbose_name='Titulación',
     )
     curso = models.IntegerField(choices=CURSOS)
+    cuatrimestre = models.IntegerField(
+        choices=CUATRIMESTRES, default=1, verbose_name='Cuatrimestre'
+    )
     es_electiva = models.BooleanField(
         default=False,
         verbose_name='Es electiva',
-        help_text='Las asignaturas electivas pueden compartir franja horaria con otras electivas del mismo curso.',
+        help_text='Las asignaturas electivas pueden compartir franja horaria con otras electivas del mismo curso y cuatrimestre.',
     )
     profesor = models.ForeignKey(
         Profesor,

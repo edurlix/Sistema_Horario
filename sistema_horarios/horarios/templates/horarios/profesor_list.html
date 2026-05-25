@@ -7,9 +7,10 @@
 
 <div class="page-header">
   <h2>Listado de Profesores</h2>
-  {% if user.is_authenticated %}
-  <a href="{% url 'profesor-create' %}" class="btn btn-primary">+ Nuevo Profesor</a>
-  {% endif %}
+  <div class="page-header-actions">
+    {% include "horarios/includes/filters_profesor.html" %}
+    <a href="{% url 'profesor-create' %}" class="btn btn-primary">+ Nuevo Profesor</a>
+  </div>
 </div>
 
 {% if profesor_list %}
@@ -40,8 +41,10 @@
 <div class="card">
   <div class="card-body">
     <div class="empty-state">
-      <h3 style="color: #999;">No hay profesores registrados</h3>
-      {% if user.is_authenticated %}
+      <h3 style="color: #999;">
+        {% if request.GET %}No hay profesores que coincidan con el filtro{% else %}No hay profesores registrados{% endif %}
+      </h3>
+      {% if not request.GET %}
       <a href="{% url 'profesor-create' %}" class="btn btn-primary" style="margin-top: 14px;">+ Nuevo Profesor</a>
       {% endif %}
     </div>

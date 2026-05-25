@@ -22,6 +22,6 @@ class SesionAdmin(admin.ModelAdmin):
 
 @admin.register(Asignatura)
 class AsignaturaAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'nombre', 'titulacion', 'curso', 'es_electiva', 'profesor')
-    list_filter = ('titulacion', 'curso', 'es_electiva')
+    list_display = ('codigo', 'nombre', 'titulacion', 'curso', 'cuatrimestre', 'es_electiva', 'profesor')
+    list_filter = ('titulacion', 'curso', 'cuatrimestre', 'es_electiva')
     search_fields = ('codigo', 'nombre')

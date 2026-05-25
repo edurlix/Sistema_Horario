@@ -48,7 +48,7 @@
           <a href="{{ asignatura.get_absolute_url }}">{{ asignatura.codigo }} — {{ asignatura.nombre }}</a>
         </div>
         <div class="item-subtitle">
-          {{ asignatura.titulacion.nombre }} · {{ asignatura.get_curso_display }}
+          {{ asignatura.titulacion.nombre }} · {{ asignatura.get_curso_display }} · {{ asignatura.get_cuatrimestre_display }}
         </div>
       </div>
       <div style="display: flex; gap: 6px; align-items: center;">
