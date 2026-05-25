@@ -1,0 +1,56 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Crear Cuenta · Sistema de Horarios</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<div class="login-wrapper">
+  <div class="login-card" style="max-width: 440px;">
+
+    <div class="login-header">
+      <h1>Crear Cuenta</h1>
+      <p>Sistema de Horarios · UCJC</p>
+    </div>
+
+    <div class="login-body">
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% for field in form %}
+        <div class="form-group">
+          <label for="{{ field.id_for_label }}">
+            {{ field.label }}{% if field.field.required %}<span class="required"> *</span>{% endif %}
+          </label>
+          {{ field }}
+          {% if field.help_text %}
+          <p class="form-hint">{{ field.help_text }}</p>
+          {% endif %}
+          {% if field.errors %}
+          <ul class="errorlist">
+            {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary"
+                style="width: 100%; justify-content: center; padding: 10px; margin-top: 4px;">
+          Crear cuenta
+        </button>
+      </form>
+
+      <p style="text-align: center; margin-top: 18px; font-size: 0.85rem; color: #777;">
+        Ya tienes cuenta?
+        <a href="{% url 'login' %}" style="font-weight: 600;">Inicia sesion</a>
+      </p>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>
