@@ -35,9 +35,10 @@
             {% endfor %}
           </select>
         </div>
+        {% include "horarios/includes/filter_remember.html" %}
         <div class="filter-float-footer">
           <button type="submit" class="btn btn-primary btn-sm">Aplicar</button>
-          <a href="{{ request.path }}" class="btn btn-secondary btn-sm">Limpiar</a>
+          <a href="{{ request.path }}" class="btn btn-secondary btn-sm filter-clear-btn">Limpiar</a>
         </div>
       </form>
     </div>

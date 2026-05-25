@@ -5,12 +5,30 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% block title %}<title>Sistema de Horarios</title>{% endblock %}
-  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=3">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=4">
   <style>
     /* Crítico: ocultar filtro aunque falle la carga del CSS externo */
     .filter-float { display: none !important; }
     .filter-float.is-visible { display: block !important; }
   </style>
+  <script>
+  (function() {
+    var key = 'horario-filter:' + location.pathname;
+    var stored = sessionStorage.getItem(key);
+    if (!stored) return;
+    var params = new URLSearchParams(location.search);
+    params.delete('page');
+    var hasParams = false;
+    params.forEach(function(v) { if (String(v).trim()) hasParams = true; });
+    if (hasParams) return;
+    try {
+      var data = JSON.parse(stored);
+      if (data.remember && data.qs) {
+        location.replace(location.pathname + '?' + data.qs);
+      }
+    } catch (e) {}
+  })();
+  </script>
 </head>
 <body>
 <div class="layout">
@@ -104,7 +122,58 @@
 </div>
 <script>
 (function() {
+  var FILTER_KEY_PREFIX = 'horario-filter:';
   var filterLayers = [];
+
+  function filterStorageKey() {
+    return FILTER_KEY_PREFIX + location.pathname;
+  }
+
+  function readStoredFilter() {
+    try {
+      return JSON.parse(sessionStorage.getItem(filterStorageKey()) || 'null');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveStoredFilter(form) {
+    var remember = form.querySelector('.filter-remember');
+    var key = filterStorageKey();
+    if (!remember || !remember.checked) {
+      sessionStorage.removeItem(key);
+      return;
+    }
+    var params = new URLSearchParams(new FormData(form));
+    sessionStorage.setItem(key, JSON.stringify({
+      remember: true,
+      qs: params.toString()
+    }));
+  }
+
+  function clearStoredFilter() {
+    sessionStorage.removeItem(filterStorageKey());
+  }
+
+  function syncRememberCheckboxes() {
+    var stored = readStoredFilter();
+    if (!stored || !stored.remember) return;
+    document.querySelectorAll('.filter-remember').forEach(function(cb) {
+      cb.checked = true;
+    });
+  }
+
+  function initFilterRemember() {
+    syncRememberCheckboxes();
+    document.querySelectorAll('.filter-float-form').forEach(function(form) {
+      form.addEventListener('submit', function() {
+        saveStoredFilter(form);
+      });
+    });
+    document.querySelectorAll('.filter-clear-btn').forEach(function(link) {
+      link.addEventListener('click', clearStoredFilter);
+    });
+  }
 
   function initFilters() {
     document.querySelectorAll('.filter-wrap').forEach(function(wrap) {
@@ -186,9 +255,13 @@
   });
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initFilters);
+    document.addEventListener('DOMContentLoaded', function() {
+      initFilters();
+      initFilterRemember();
+    });
   } else {
     initFilters();
+    initFilterRemember();
   }
 })();
 </script>
