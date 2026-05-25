@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     # Home
     path('', views.index, name='index'),
+    path('export/<str:formato>/', views.export_horario, name='horario-export'),
 
     # Titulación
     path('titulaciones/', views.TitulacionListView.as_view(), name='titulaciones'),

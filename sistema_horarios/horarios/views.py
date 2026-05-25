@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import IntegrityError
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse_lazy
 from django.views import generic
@@ -10,11 +11,13 @@ from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from .forms import (
     AsignaturaForm,
     AsignaturaSesionForm,
+    ImportHorarioForm,
     ProfesorForm,
     RegistroForm,
     SesionForm,
     TitulacionForm,
 )
+from .import_export import excel_response, import_from_excel, pdf_response
 from .filters import (
     build_filter_qs,
     count_active_filters,
@@ -27,6 +30,19 @@ from .models import Asignatura, Profesor, Sesion, Titulacion
 
 
 DIAS_ORDER = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE']
+
+
+class DuplicateSafeMixin:
+    """Re-render form with a friendly message instead of a 500 on IntegrityError."""
+
+    duplicate_message = 'Ya existe un registro con esos datos.'
+
+    def form_valid(self, form):
+        try:
+            return super().form_valid(form)
+        except IntegrityError:
+            messages.error(self.request, self.duplicate_message)
+            return self.form_invalid(form)
 
 
 class ListFilterMixin:
@@ -238,6 +254,42 @@ def index(request):
 
     conflictos = detectar_conflictos(user)
     horarios_titulaciones = generar_horarios_por_titulacion(user)
+    puede_exportar = not conflictos and (
+        num_profesores or num_asignaturas or num_sesiones
+    )
+
+    import_form = None
+    if request.method == 'POST' and request.POST.get('action') == 'import':
+        import_form = ImportHorarioForm(request.POST, request.FILES)
+        if import_form.is_valid():
+            try:
+                result = import_from_excel(request.user, import_form.cleaned_data['archivo'])
+            except Exception:
+                messages.error(
+                    request,
+                    'No se pudo leer el archivo. Usa un Excel exportado desde este sistema.',
+                )
+            else:
+                c = result['created']
+                if any(c.values()):
+                    messages.success(
+                        request,
+                        f'Importacion completada: {c["titulaciones"]} titulacion(es), '
+                        f'{c["profesores"]} profesor(es), {c["sesiones"]} sesion(es), '
+                        f'{c["asignaturas"]} asignatura(s), {c["enlaces"]} enlace(s) de sesion.',
+                    )
+                else:
+                    messages.info(request, 'No se importo ningun dato nuevo.')
+                for aviso in result['skipped'][:20]:
+                    messages.warning(request, aviso)
+                if len(result['skipped']) > 20:
+                    messages.warning(
+                        request,
+                        f'... y {len(result["skipped"]) - 20} aviso(s) mas.',
+                    )
+                return redirect('index')
+    if import_form is None:
+        import_form = ImportHorarioForm()
 
     return render(request, 'index.html', {
         'num_profesores': num_profesores,
@@ -246,7 +298,26 @@ def index(request):
         'num_visits': num_visits,
         'conflictos': conflictos,
         'horarios_titulaciones': horarios_titulaciones,
+        'puede_exportar': puede_exportar,
+        'import_form': import_form,
     })
+
+
+@login_required
+def export_horario(request, formato):
+    conflictos = detectar_conflictos(request.user)
+    if conflictos:
+        messages.error(
+            request,
+            'No se puede exportar: resuelve los conflictos de horario antes de exportar.',
+        )
+        return redirect('index')
+    if formato == 'excel':
+        return excel_response(request.user)
+    if formato == 'pdf':
+        return pdf_response(request.user)
+    messages.error(request, 'Formato de exportacion no valido.')
+    return redirect('index')
 
 
 # ── Titulacion CRUD ────────────────────────────────────────────────────────────
@@ -263,11 +334,17 @@ class TitulacionListView(ListFilterMixin, LoginRequiredMixin, generic.ListView):
         return filter_titulaciones(qs, self.request)
 
 
-class TitulacionCreateView(LoginRequiredMixin, CreateView):
+class TitulacionCreateView(DuplicateSafeMixin, LoginRequiredMixin, CreateView):
     model = Titulacion
     form_class = TitulacionForm
     template_name = 'horarios/titulacion_form.html'
     success_url = reverse_lazy('titulaciones')
+    duplicate_message = 'Ya existe una titulacion con ese codigo.'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
     def form_valid(self, form):
         form.instance.creado_por = self.request.user
@@ -275,14 +352,20 @@ class TitulacionCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class TitulacionUpdateView(LoginRequiredMixin, UpdateView):
+class TitulacionUpdateView(DuplicateSafeMixin, LoginRequiredMixin, UpdateView):
     model = Titulacion
     form_class = TitulacionForm
     template_name = 'horarios/titulacion_form.html'
     success_url = reverse_lazy('titulaciones')
+    duplicate_message = 'Ya existe una titulacion con ese codigo.'
 
     def get_queryset(self):
         return Titulacion.objects.filter(creado_por=self.request.user)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
     def form_valid(self, form):
         messages.success(self.request, f'Titulacion "{form.instance.nombre}" actualizada.')
@@ -365,7 +448,7 @@ class SesionListView(ListFilterMixin, LoginRequiredMixin, generic.ListView):
 
 # ── Profesor CRUD ──────────────────────────────────────────────────────────────
 
-class ProfesorCreateView(LoginRequiredMixin, CreateView):
+class ProfesorCreateView(DuplicateSafeMixin, LoginRequiredMixin, CreateView):
     model = Profesor
     form_class = ProfesorForm
     template_name = 'horarios/profesor_form.html'
@@ -377,7 +460,7 @@ class ProfesorCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class ProfesorUpdateView(LoginRequiredMixin, UpdateView):
+class ProfesorUpdateView(DuplicateSafeMixin, LoginRequiredMixin, UpdateView):
     model = Profesor
     form_class = ProfesorForm
     template_name = 'horarios/profesor_form.html'
@@ -406,7 +489,7 @@ class ProfesorDeleteView(LoginRequiredMixin, DeleteView):
 
 # ── Sesion CRUD ────────────────────────────────────────────────────────────────
 
-class SesionCreateView(LoginRequiredMixin, CreateView):
+class SesionCreateView(DuplicateSafeMixin, LoginRequiredMixin, CreateView):
     model = Sesion
     form_class = SesionForm
     template_name = 'horarios/sesion_form.html'
@@ -418,7 +501,7 @@ class SesionCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class SesionUpdateView(LoginRequiredMixin, UpdateView):
+class SesionUpdateView(DuplicateSafeMixin, LoginRequiredMixin, UpdateView):
     model = Sesion
     form_class = SesionForm
     template_name = 'horarios/sesion_form.html'
@@ -454,11 +537,18 @@ def asignatura_create(request):
         post_data.pop('sesiones', None)
         form = AsignaturaForm(post_data, user=request.user)
         if form.is_valid():
-            asignatura = form.save(commit=False)
-            asignatura.creado_por = request.user
-            asignatura.save()
-            messages.success(request, f'Asignatura "{asignatura.codigo}" creada exitosamente.')
-            return redirect('asignaturas')
+            try:
+                asignatura = form.save(commit=False)
+                asignatura.creado_por = request.user
+                asignatura.save()
+            except IntegrityError:
+                messages.error(
+                    request,
+                    f'Ya existe una asignatura con el codigo "{form.cleaned_data["codigo"]}".',
+                )
+            else:
+                messages.success(request, f'Asignatura "{asignatura.codigo}" creada exitosamente.')
+                return redirect('asignaturas')
     else:
         form = AsignaturaForm(user=request.user)
     return render(request, 'horarios/asignatura_form.html', {'form': form})
@@ -470,9 +560,16 @@ def asignatura_update(request, pk):
     if request.method == 'POST':
         form = AsignaturaForm(request.POST, instance=asignatura, user=request.user)
         if form.is_valid():
-            form.save()
-            messages.success(request, f'Asignatura "{asignatura.codigo}" actualizada.')
-            return redirect('asignaturas')
+            try:
+                form.save()
+            except IntegrityError:
+                messages.error(
+                    request,
+                    f'Ya existe una asignatura con el codigo "{form.cleaned_data["codigo"]}".',
+                )
+            else:
+                messages.success(request, f'Asignatura "{asignatura.codigo}" actualizada.')
+                return redirect('asignaturas')
     else:
         form = AsignaturaForm(instance=asignatura, user=request.user)
     return render(request, 'horarios/asignatura_form.html', {'form': form, 'asignatura': asignatura})

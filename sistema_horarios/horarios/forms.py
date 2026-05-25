@@ -34,6 +34,23 @@ class TitulacionForm(forms.ModelForm):
             'nombre': forms.TextInput(attrs={**FC, 'placeholder': 'Ej: Ingeniería Informática'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_codigo(self):
+        codigo = self.cleaned_data['codigo'].strip()
+        if not self.user:
+            return codigo
+        qs = Titulacion.objects.filter(codigo__iexact=codigo, creado_por=self.user)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError(
+                f'Ya existe una titulacion con el codigo "{codigo}".'
+            )
+        return codigo
+
 
 # ── Profesor ───────────────────────────────────────────────────────────────────
 
@@ -98,6 +115,19 @@ class AsignaturaForm(forms.ModelForm):
         if self.user:
             self.fields['titulacion'].queryset = Titulacion.objects.filter(creado_por=self.user)
             self.fields['profesor'].queryset = Profesor.objects.filter(creado_por=self.user)
+
+    def clean_codigo(self):
+        codigo = self.cleaned_data['codigo'].strip()
+        if not self.user:
+            return codigo
+        qs = Asignatura.objects.filter(codigo__iexact=codigo, creado_por=self.user)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError(
+                f'Ya existe una asignatura con el codigo "{codigo}".'
+            )
+        return codigo
 
 
 class AsignaturaSesionForm(forms.ModelForm):
@@ -171,3 +201,19 @@ class AsignaturaSesionForm(forms.ModelForm):
             raise forms.ValidationError(errores)
 
         return sesiones
+
+
+class ImportHorarioForm(forms.Form):
+    archivo = forms.FileField(
+        label='Archivo Excel',
+        help_text='Selecciona un archivo .xlsx exportado desde este sistema.',
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': '.xlsx'}),
+    )
+
+    def clean_archivo(self):
+        archivo = self.cleaned_data['archivo']
+        if not archivo.name.lower().endswith('.xlsx'):
+            raise forms.ValidationError('El archivo debe ser formato Excel (.xlsx).')
+        if archivo.size > 5 * 1024 * 1024:
+            raise forms.ValidationError('El archivo no puede superar 5 MB.')
+        return archivo

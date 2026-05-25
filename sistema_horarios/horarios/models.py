@@ -4,7 +4,7 @@ from django.urls import reverse
 
 
 class Titulacion(models.Model):
-    codigo = models.CharField(max_length=10, unique=True, verbose_name='Código')
+    codigo = models.CharField(max_length=10, verbose_name='Código')
     nombre = models.CharField(max_length=200, verbose_name='Nombre')
     creado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,

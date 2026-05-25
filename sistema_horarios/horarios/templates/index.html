@@ -1,7 +1,7 @@
 {% extends "base_generic.html" %}
 
 {% block title %}<title>Inicio · Sistema de Horarios</title>{% endblock %}
-{% block page_title %}Inicio — Horarios Semanales{% endblock %}
+{% block page_title %}Inicio — Horarios{% endblock %}
 
 {% block content %}
 
@@ -36,6 +36,33 @@
   No se han detectado conflictos de horario.
 </div>
 {% endif %}
+
+<!-- Export / Import -->
+<div class="ie-bar">
+  <div class="ie-row">
+    <span class="ie-label">Exportar</span>
+    {% if puede_exportar %}
+    <a href="{% url 'horario-export' 'excel' %}" class="btn btn-secondary btn-sm">Excel</a>
+    <a href="{% url 'horario-export' 'pdf' %}" class="btn btn-secondary btn-sm">PDF</a>
+    {% else %}
+    <span class="ie-note">No disponible</span>
+    {% endif %}
+  </div>
+  <div class="ie-row">
+    <span class="ie-label">Importar</span>
+    <form method="post" enctype="multipart/form-data" class="ie-import">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="import">
+      <input type="file" name="archivo" id="id_archivo" accept=".xlsx" class="ie-file">
+      <button type="submit" class="btn btn-primary btn-sm">Importar</button>
+    </form>
+    {% if import_form.archivo.errors %}
+    <ul class="errorlist ie-errors">
+      {% for error in import_form.archivo.errors %}<li>{{ error }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</div>
 
 <!-- Timetables per degree + course + cuatrimestre -->
 {% if horarios_titulaciones %}
